@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反比例函数 y=k/x 动态演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        .container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-wrapper {
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 10px;
+        }
+
+        .controls {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .control-panel h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider-container label {
+            font-weight: bold;
+            color: #495057;
+            min-width: 30px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #1dd1a1);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .formula-display {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .info-item {
+            background: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item.positive {
+            border-left-color: #1dd1a1;
+            background: linear-gradient(145deg, #e8f8f5, #d4efdf);
+        }
+
+        .info-item.negative {
+            border-left-color: #ff6b6b;
+            background: linear-gradient(145deg, #fdeaea, #fadbd8);
+        }
+
+        .info-item .label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .quadrant-info {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .quadrant-info.positive {
+            background: linear-gradient(145deg, #1dd1a1, #10ac84);
+            color: #fff;
+        }
+
+        .quadrant-info.negative {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a24);
+            color: #fff;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .legend-color.curve {
+            height: 3px;
+            background: #667eea;
+            box-shadow: 0 0 8px rgba(102,126,234,0.6);
+        }
+
+        .legend-color.asymptote {
+            height: 2px;
+            background: #adb5bd;
+            border-style: dashed;
+        }
+
+        .tips {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .tips h4 {
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .tips ul {
+            color: #856404;
+            font-size: 0.85rem;
+            padding-left: 20px;
+        }
+
+        .tips li {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 700px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .formula-display {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>📐 反比例函数 y = k/x 动态演示工具</h1>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="canvas-wrapper">
+                <canvas id="canvas" width="450" height="450"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color curve"></div>
+                        <span>双曲线 y = k/x</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color asymptote"></div>
+                        <span>渐近线 (x轴、y轴)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="formula-display" id="formula">
+                    y = 1/x
+                </div>
+                
+                <div class="control-panel">
+                    <h3>🎚️ 调节 k 值</h3>
+                    <div class="slider-container">
+                        <label>-20</label>
+                        <input type="range" id="kSlider" min="-20" max="20" value="1" step="0.5">
+                        <label>+20</label>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; font-size: 1.2rem;">
+                        <strong>k = <span id="kValue">1</span></strong>
+                    </div>
+                </div>
+                
+                <div class="control-panel">
+                    <h3>📍 象限位置</h3>
+                    <div class="quadrant-info positive" id="quadrantInfo">
+                        ✓ 在第一、三象限
+                    </div>
+                </div>
+                
+                <div class="control-panel">
+                    <h3>📖 函数性质</h3>
+                    <div class="info-grid">
+                        <div class="info-item positive" id="domain">
+                            <div class="label">定义域</div>
+                            <div class="value">x ≠ 0</div>
+                        </div>
+                        <div class="info-item positive" id="range">
+                            <div class="label">值域</div>
+                            <div class="value">y ≠ 0</div>
+                        </div>
+                        <div class="info-item" id="symmetry">
+                            <div class="label">对称性</div>
+                            <div class="value">关于原点对称</div>
+                        </div>
+                        <div class="info-item" id="monotonic">
+                            <div class="label">单调性</div>
+                            <div class="value" id="monotonicValue">k>0: 减函数</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tips">
+                    <h4>💡 知识要点</h4>
+                    <ul>
+                        <li>k > 0：双曲线在一、三象限，图像关于原点对称</li>
+                        <li>k < 0：双曲线在二、四象限，图像关于原点对称</li>
+                        <li>x轴和y轴是双曲线的两条渐近线</li>
+                        <li>|k| 越大，双曲线越接近坐标轴</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const kSlider = document.getElementById('kSlider');
+        const kValueDisplay = document.getElementById('kValue');
+        const formulaDisplay = document.getElementById('formula');
+        const quadrantInfo = document.getElementById('quadrantInfo');
+        const monotonicValue = document.getElementById('monotonicValue');
+        const domain = document.getElementById('domain');
+        const range = document.getElementById('range');
+        const symmetry = document.getElementById('symmetry');
+        const monotonic = document.getElementById('monotonic');
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const scale = 15; // 每个单位对应的像素数
+
+        function drawGrid() {
+            ctx.strokeStyle = '#e9ecef';
+            ctx.lineWidth = 1;
+            
+            // 绘制细网格线
+            for (let i = 0; i <= canvas.width; i += scale) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= canvas.height; i += scale) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = '#495057';
+            ctx.lineWidth = 2;
+            
+            // x轴
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            
+            // y轴
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+            
+            // 箭头
+            const arrowSize = 10;
+            ctx.fillStyle = '#495057';
+            
+            // x轴箭头
+            ctx.beginPath();
+            ctx.moveTo(canvas.width, centerY);
+            ctx.lineTo(canvas.width - arrowSize, centerY - arrowSize/2);
+            ctx.lineTo(canvas.width - arrowSize, centerY + arrowSize/2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // y轴箭头
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX - arrowSize/2, arrowSize);
+            ctx.lineTo(centerX + arrowSize/2, arrowSize);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 坐标标签
+            ctx.font = '14px Microsoft YaHei';
+            ctx.fillStyle = '#495057';
+            ctx.fillText('x', canvas.width - 20, centerY - 15);
+            ctx.fillText('y', centerX + 10, 20);
+            
+            // 原点
+            ctx.fillText('O', centerX - 15, centerY + 15);
+            
+            // 刻度标注
+            ctx.font = '11px Microsoft YaHei';
+            for (let i = -15; i <= 15; i += 5) {
+                if (i === 0) continue;
+                // x轴刻度
+                ctx.fillText(i.toString(), centerX + i * scale - 5, centerY + 15);
+                // y轴刻度
+                ctx.fillText(i.toString(), centerX + 8, centerY - i * scale + 4);
+            }
+        }
+
+        function drawAsymptotes() {
+            ctx.strokeStyle = '#adb5bd';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([8, 6]);
+            
+            // x轴渐近线
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            
+            // y轴渐近线
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+        }
+
+        function drawHyperbola(k) {
+            if (Math.abs(k) < 0.1) return; // k接近0时不绘制
+            
+            const step = 0.5;
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            
+            if (k > 0) {
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+            } else {
+                gradient.addColorStop(0, '#ff6b6b');
+                gradient.addColorStop(1, '#ee5a24');
+            }
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = k > 0 ? 'rgba(102,126,234,0.6)' : 'rgba(255,107,107,0.6)';
+            ctx.shadowBlur = 8;
+            
+            // 第一象限 (x > 0, y > 0)
+            ctx.beginPath();
+            let started1 = false;
+            for (let x = 0.1; x <= 15; x += step) {
+                const y = k / x;
+                if (y > -15 && y < 15) {
+                    const px = centerX + x * scale;
+                    const py = centerY - y * scale;
+                    if (!started1) {
+                        ctx.moveTo(px, py);
+                        started1 = true;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+            }
+            ctx.stroke();
+            
+            // 第三象限 (x < 0, y < 0)
+            ctx.beginPath();
+            let started3 = false;
+            for (let x = -15; x <= -0.1; x += step) {
+                const y = k / x;
+                if (y > -15 && y < 15) {
+                    const px = centerX + x * scale;
+                    const py = centerY - y * scale;
+                    if (!started3) {
+                        ctx.moveTo(px, py);
+                        started3 = true;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+            }
+            ctx.stroke();
+            
+            // 如果k<0，绘制第二、四象限
+            if (k < 0) {
+                // 第二象限 (x < 0, y > 0)
+                ctx.beginPath();
+                let started2 = false;
+                for (let x = -15; x <= -0.1; x += step) {
+                    const y = k / x;
+                    if (y > -15 && y < 15) {
+                        const px = centerX + x * scale;
+                        const py = centerY - y * scale;
+                        if (!started2) {
+                            ctx.moveTo(px, py);
+                            started2 = true;
+                        } else {
+                            ctx.lineTo(px, py);
+                        }
+                    }
+                }
+                ctx.stroke();
+                
+                // 第四象限 (x > 0, y < 0)
+                ctx.beginPath();
+                let started4 = false;
+                for (let x = 0.1; x <= 15; x += step) {
+                    const y = k / x;
+                    if (y > -15 && y < 15) {
+                        const px = centerX + x * scale;
+                        const py = centerY - y * scale;
+                        if (!started4) {
+                            ctx.moveTo(px, py);
+                            started4 = true;
+                        } else {
+                            ctx.lineTo(px, py);
+                        }
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function drawQuadrantLabels(k) {
+            ctx.font = 'bold 16px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            if (k > 0) {
+                ctx.fillStyle = '#1dd1a1';
+                ctx.fillText('一', centerX + 80, centerY - 80);
+                ctx.fillText('三', centerX - 80, centerY + 80);
+                
+                // 添加小标记
+                ctx.font = '12px Microsoft YaHei';
+                ctx.fillText('k > 0', centerX + 80, centerY - 60);
+            } else if (k < 0) {
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fillText('二', centerX - 80, centerY - 80);
+                ctx.fillText('四', centerX + 80, centerY + 80);
+                
+                ctx.font = '12px Microsoft YaHei';
+                ctx.fillText('k < 0', centerX - 80, centerY - 60);
+            }
+            
+            ctx.textAlign = 'start';
+            ctx.textBaseline = 'alphabetic';
+        }
+
+        function drawSymmetryIndicator(k) {
+            if (Math.abs(k) < 0.1) return;
+            
+            ctx.font = '13px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#856404';
+            ctx.fillText('关于原点O对称', centerX, centerY + 25);
+            ctx.textAlign = 'start';
+        }
+
+        function draw() {
+            const k = parseFloat(kSlider.value);
+            
+            // 清空画布
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格
+            drawGrid();
+            
+            // 绘制渐近线
+            drawAsymptotes();
+            
+            // 绘制坐标轴
+            drawAxes();
+            
+            // 绘制双曲线
+            drawHyperbola(k);
+            
+            // 绘制象限标注
+            drawQuadrantLabels(k);
+            
+            // 绘制对称说明
+            drawSymmetryIndicator(k);
+            
+            // 更新UI
+            updateUI(k);
+        }
+
+        function updateUI(k) {
+            kValueDisplay.textContent = k;
+            
+            // 更新公式显示
+            if (k === parseInt(k)) {
+                formulaDisplay.textContent = `y = ${k}/x`;
+            } else {
+                formulaDisplay.textContent = `y = ${k}/x`;
+            }
+            
+            // 更新象限信息
+            if (k > 0) {
+                quadrantInfo.className = 'quadrant-info positive';
+                quadrantInfo.innerHTML = '✓ 在 <strong>第一、三</strong> 象限';
+                domain.className = 'info-item positive';
+                range.className = 'info-item positive';
+                monotonicValue.textContent = 'k>0: 减函数';
+                monotonic.className = 'info-item positive';
+            } else if (k < 0) {
+                quadrantInfo.className = 'quadrant-info negative';
+                quadrantInfo.innerHTML = '✓ 在 <strong>第二、四</strong> 象限';
+                domain.className = 'info-item negative';
+                range.className = 'info-item negative';
+                monotonicValue.textContent = 'k<0: 增函数';
+                monotonic.className = 'info-item negative';
+            } else {
+                quadrantInfo.className = 'quadrant-info';
+                quadrantInfo.innerHTML = '⚠ k = 0 时不是反比例函数';
+                domain.className = 'info-item';
+                range.className = 'info-item';
+                monotonic.className = 'info-item';
+            }
+        }
+
+        // 初始化
+        kSlider.addEventListener('input', draw);
+        
+        // 初始绘制
+        draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二次函数动态演示工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            margin-top: 8px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 30px;
+            gap: 30px;
+        }
+
+        .controls-panel {
+            flex: 0 0 320px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-panel h2 {
+            color: #333;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #4a90e2;
+        }
+
+        .formula-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 25px;
+            font-family: "Times New Roman", serif;
+            letter-spacing: 1px;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .slider-label span {
+            font-size: 1.1em;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .slider-value {
+            background: #4a90e2;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .slider-value.warning {
+            background: #e74c3c;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 10px;
+        }
+
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .property-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .property-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .property-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .property-label {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .property-value {
+            color: #333;
+            font-size: 1.4em;
+            font-weight: 700;
+            font-family: "Times New Roman", serif;
+        }
+
+        .property-value.up {
+            color: #27ae60;
+        }
+
+        .property-value.down {
+            color: #e74c3c;
+        }
+
+        .hint {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+            font-size: 0.95em;
+        }
+
+        .hint strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .controls-panel {
+                flex: none;
+                width: 100%;
+            }
+
+            .header h1 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📐 二次函数动态演示工具</h1>
+            <p>y = ax² + bx + c  ·  初中数学课堂教学专用</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls-panel">
+                <h2>⚙️ 参数调节</h2>
+
+                <div class="formula-display" id="formulaDisplay">y = 1x² + 0x + 0</div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>参数 a</span>
+                        <span class="slider-value" id="aValue">1</span>
+                    </div>
+                    <input type="range" id="sliderA" min="-3" max="3" step="0.1" value="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>参数 b</span>
+                        <span class="slider-value" id="bValue">0</span>
+                    </div>
+                    <input type="range" id="sliderB" min="-10" max="10" step="0.5" value="0">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>参数 c</span>
+                        <span class="slider-value" id="cValue">0</span>
+                    </div>
+                    <input type="range" id="sliderC" min="-10" max="10" step="0.5" value="0">
+                </div>
+
+                <div class="hint">
+                    <strong>💡 提示</strong>
+                    调节滑块观察抛物线变化。a 控制开口方向和形状，b 影响对称轴位置，c 控制上下平移。
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div class="canvas-container">
+                    <canvas id="graphCanvas" width="600" height="500"></canvas>
+                </div>
+
+                <div class="properties-grid">
+                    <div class="property-card">
+                        <div class="property-icon">🌟</div>
+                        <div class="property-label">开口方向</div>
+                        <div class="property-value" id="openDirection">向上</div>
+                    </div>
+                    <div class="property-card">
+                        <div class="property-icon">📍</div>
+                        <div class="property-label">顶点坐标</div>
+                        <div class="property-value" id="vertexCoord">(0, 0)</div>
+                    </div>
+                    <div class="property-card">
+                        <div class="property-icon">📏</div>
+                        <div class="property-label">对称轴</div>
+                        <div class="property-value" id="axisLine">x = 0</div>
+                    </div>
+                    <div class="property-card">
+                        <div class="property-icon">🎯</div>
+                        <div class="property-label">Δ 判断</div>
+                        <div class="property-value" id="deltaValue">Δ = 0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const sliderA = document.getElementById('sliderA');
+        const sliderB = document.getElementById('sliderB');
+        const sliderC = document.getElementById('sliderC');
+        const aValue = document.getElementById('aValue');
+        const bValue = document.getElementById('bValue');
+        const cValue = document.getElementById('cValue');
+        const formulaDisplay = document.getElementById('formulaDisplay');
+        const openDirection = document.getElementById('openDirection');
+        const vertexCoord = document.getElementById('vertexCoord');
+        const axisLine = document.getElementById('axisLine');
+        const deltaValue = document.getElementById('deltaValue');
+
+        // 坐标系配置
+        const padding = 50;
+        const gridSize = 40;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        // 坐标范围
+        let xRange = { min: -8, max: 8 };
+        let yRange = { min: -8, max: 8 };
+
+        function getX(x) {
+            return centerX + (x - (xRange.min + xRange.max) / 2) * gridSize;
+        }
+
+        function getY(y) {
+            return centerY - (y - (yRange.min + yRange.max) / 2) * gridSize;
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            // 绘制网格线
+            for (let x = xRange.min; x <= xRange.max; x++) {
+                ctx.beginPath();
+                ctx.moveTo(getX(x), getY(yRange.min));
+                ctx.lineTo(getX(x), getY(yRange.max));
+                ctx.stroke();
+            }
+
+            for (let y = yRange.min; y <= yRange.max; y++) {
+                ctx.beginPath();
+                ctx.moveTo(getX(xRange.min), getY(y));
+                ctx.lineTo(getX(xRange.max), getY(y));
+                ctx.stroke();
+            }
+
+            // 绘制坐标轴
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(getX(xRange.min), getY(0));
+            ctx.lineTo(getX(xRange.max), getY(0));
+            ctx.stroke();
+
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(getX(0), getY(yRange.min));
+            ctx.lineTo(getX(0), getY(yRange.max));
+            ctx.stroke();
+
+            // 绘制刻度和标注
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            for (let x = Math.ceil(xRange.min); x <= xRange.max; x++) {
+                if (x !== 0) {
+                    ctx.fillText(x.toString(), getX(x), getY(0) + 8);
+                }
+                // 刻度线
+                ctx.beginPath();
+                ctx.moveTo(getX(x), getY(0) - 4);
+                ctx.lineTo(getX(x), getY(0) + 4);
+                ctx.stroke();
+            }
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            for (let y = Math.ceil(yRange.min); y <= yRange.max; y++) {
+                if (y !== 0) {
+                    ctx.fillText(y.toString(), getX(0) - 10, getY(y));
+                }
+                // 刻度线
+                ctx.beginPath();
+                ctx.moveTo(getX(0) - 4, getY(y));
+                ctx.lineTo(getX(0) + 4, getY(y));
+                ctx.stroke();
+            }
+
+            // 原点标注
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('O', getX(0) - 10, getY(0) + 8);
+
+            // 轴标签
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('x', getX(xRange.max) - 15, getY(0) + 15);
+            ctx.fillText('y', getX(0) + 15, getY(yRange.max) + 10);
+        }
+
+        function drawParabola(a, b, c) {
+            if (a === 0) return;
+
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            const step = 0.05;
+            let started = false;
+
+            for (let x = xRange.min; x <= xRange.max; x += step) {
+                const y = a * x * x + b * x + c;
+
+                if (y >= yRange.min && y <= yRange.max) {
+                    if (!started) {
+                        ctx.moveTo(getX(x), getY(y));
+                        started = true;
+                    } else {
+                        ctx.lineTo(getX(x), getY(y));
+                    }
+                } else {
+                    started = false;
+                }
+            }
+
+            ctx.stroke();
+
+            // 绘制对称轴（虚线）
+            const axisX = -b / (2 * a);
+            if (axisX >= xRange.min && axisX <= xRange.max) {
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 5]);
+                ctx.beginPath();
+                ctx.moveTo(getX(axisX), getY(yRange.min));
+                ctx.lineTo(getX(axisX), getY(yRange.max));
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 对称轴标签
+                ctx.fillStyle = '#3498db';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('x = ' + axisX.toFixed(2), getX(axisX), getY(yRange.max) + 15);
+            }
+
+            // 绘制顶点
+            const vertexX = -b / (2 * a);
+            const vertexY = (4 * a * c - b * b) / (4 * a);
+
+            if (vertexY >= yRange.min && vertexY <= yRange.max) {
+                // 顶点圆点
+                ctx.fillStyle = '#9b59b6';
+                ctx.beginPath();
+                ctx.arc(getX(vertexX), getY(vertexY), 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 顶点标注
+                ctx.fillStyle = '#9b59b6';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('顶点', getX(vertexX) + 12, getY(vertexY) - 5);
+            }
+        }
+
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            if (Number.isInteger(num)) return num.toString();
+            return num.toFixed(2);
+        }
+
+        function updateDisplay() {
+            let a = parseFloat(sliderA.value);
+            let b = parseFloat(sliderB.value);
+            let c = parseFloat(sliderC.value);
+
+            // 格式化显示值
+            let aStr = a === 0 ? '0' : (a === 1 ? '' : (a === -1 ? '-' : formatNumber(a)));
+            let bStr = b >= 0 ? '+' + formatNumber(b) : formatNumber(b);
+            let cStr = c >= 0 ? '+' + formatNumber(c) : formatNumber(c);
+
+            let formula = 'y = ' + aStr + 'x² ' + bStr + 'x ' + cStr;
+            formula = formula.replace(/\+0x/g, '+0').replace(/\+0$/, '').replace(/^\+/, '');
+            formulaDisplay.textContent = formula;
+
+            // 更新滑块值显示
+            aValue.textContent = formatNumber(a);
+            bValue.textContent = formatNumber(b);
+            cValue.textContent = formatNumber(c);
+
+            // a 不为0的提示
+            if (a === 0) {
+                aValue.classList.add('warning');
+                aValue.textContent = formatNumber(a) + ' (非二次)';
+            } else {
+                aValue.classList.remove('warning');
+            }
+
+            // 更新开口方向
+            if (a > 0) {
+                openDirection.textContent = '向上 ↑';
+                openDirection.className = 'property-value up';
+            } else {
+                openDirection.textContent = '向下 ↓';
+                openDirection.className = 'property-value down';
+            }
+
+            // 计算顶点坐标
+            if (a !== 0) {
+                const vertexX = -b / (2 * a);
+                const vertexY = (4 * a * c - b * b) / (4 * a);
+                vertexCoord.textContent = `(${formatNumber(vertexX)}, ${formatNumber(vertexY)})`;
+
+                // 对称轴
+                axisLine.textContent = `x = ${formatNumber(vertexX)}`;
+
+                // 判别式
+                const delta = b * b - 4 * a * c;
+                let deltaDesc = 'Δ = ' + formatNumber(delta) + ' → ';
+                if (delta > 0) {
+                    deltaDesc += '与x轴有两个交点';
+                } else if (delta === 0) {
+                    deltaDesc += '与x轴有一个交点';
+                } else {
+                    deltaDesc += '与x轴无交点';
+                }
+                deltaValue.textContent = deltaDesc;
+            }
+
+            // 清空画布并重绘
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawParabola(a, b, c);
+        }
+
+        // 监听滑块变化
+        sliderA.addEventListener('input', updateDisplay);
+        sliderB.addEventListener('input', updateDisplay);
+        sliderC.addEventListener('input', updateDisplay);
+
+        // 初始绘制
+        updateDisplay();
+    </script>
+</body>
+</html>
