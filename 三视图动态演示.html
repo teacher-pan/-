@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三视图动态演示工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8eef5 0%, #d4dfe9 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        .main {
+            display: flex;
+            gap: 15px;
+            height: calc(100vh - 160px);
+        }
+        .view-3d {
+            flex: 2;
+            background: #f8f9fa;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .view-3d canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #4a90d9;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .views-2d {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .view-2d {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        .view-2d canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4a90d9, #5ba0e8);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 217, 0.4);
+        }
+        .btn-primary.active {
+            background: linear-gradient(135deg, #2c5aa0, #3d6db3);
+        }
+        .btn-orange {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+        .btn-orange.active {
+            background: linear-gradient(135deg, #d68910, #c47e0d);
+        }
+        .btn-reset {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        .divider {
+            width: 1px;
+            height: 30px;
+            background: #ddd;
+            margin: 0 5px;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #666;
+        }
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📐 三视图动态演示工具</h1>
+    
+    <div class="main">
+        <div class="view-3d" id="container3d">
+            <div class="label">3D模型（拖动旋转）</div>
+            <div class="loading" id="loading">正在加载Three.js...</div>
+        </div>
+        
+        <div class="views-2d">
+            <div class="view-2d">
+                <div class="label">主视图</div>
+                <canvas id="canvasFront"></canvas>
+            </div>
+            <div class="view-2d">
+                <div class="label">左视图</div>
+                <canvas id="canvasLeft"></canvas>
+            </div>
+            <div class="view-2d">
+                <div class="label">俯视图</div>
+                <canvas id="canvasTop"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <span style="font-weight:bold;color:#333;">基本图形：</span>
+        <button class="btn btn-primary active" data-shape="cube">正方体</button>
+        <button class="btn btn-primary" data-shape="box">长方体</button>
+        <button class="btn btn-primary" data-shape="cylinder">圆柱</button>
+        <button class="btn btn-primary" data-shape="cone">圆锥</button>
+        <button class="btn btn-primary" data-shape="prism">三棱柱</button>
+        
+        <div class="divider"></div>
+        
+        <span style="font-weight:bold;color:#333;">复合图形：</span>
+        <button class="btn btn-orange" data-shape="cylinder_cone">圆柱+圆锥</button>
+        <button class="btn btn-orange" data-shape="box_cube">长方体+正方体</button>
+        
+        <div class="divider"></div>
+        
+        <button class="btn btn-reset" id="btnReset">🔄 重置视角</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js"></script>
+    <script>
+        // 全局变量
+        let scene, camera, renderer, mesh;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let rotationY = 0.5;
+        let rotationX = 0.3;
+        
+        // 初始化
+        function init() {
+            const container = document.getElementById('container3d');
+            const loading = document.getElementById('loading');
+            
+            // 检查Three.js是否加载
+            if (typeof THREE === 'undefined') {
+                loading.className = 'error';
+                loading.innerHTML = '❌ Three.js加载失败！<br>请检查网络连接后刷新页面。';
+                return;
+            }
+            
+            loading.style.display = 'none';
+            
+            // 创建场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f4f8);
+            
+            // 创建相机
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(5, 4, 6);
+            camera.lookAt(0, 0, 0);
+            
+            // 创建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
+            // 添加光照
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+            
+            // 创建初始几何体
+            createShape('cube');
+            
+            // 添加事件监听
+            setupControls();
+            
+            // 开始动画
+            animate();
+            
+            // 初始化三视图画布
+            init2DViews();
+        }
+        
+        // 创建几何体
+        function createShape(type) {
+            if (mesh) {
+                scene.remove(mesh);
+            }
+            
+            const group = new THREE.Group();
+            
+            // 面的颜色
+            const colors = {
+                front: 0xe74c3c,
+                back: 0x27ae60,
+                left: 0x3498db,
+                right: 0xf39c12,
+                top: 0x9b59b6,
+                bottom: 0x1abc9c
+            };
+            
+            switch(type) {
+                case 'cube':
+                    const cubeGeo = new THREE.BoxGeometry(2, 2, 2);
+                    const cubeMat = [
+                        new THREE.MeshPhongMaterial({ color: colors.right }),
+                        new THREE.MeshPhongMaterial({ color: colors.left }),
+                        new THREE.MeshPhongMaterial({ color: colors.top }),
+                        new THREE.MeshPhongMaterial({ color: colors.bottom }),
+                        new THREE.MeshPhongMaterial({ color: colors.front }),
+                        new THREE.MeshPhongMaterial({ color: colors.back })
+                    ];
+                    const cube = new THREE.Mesh(cubeGeo, cubeMat);
+                    group.add(cube);
+                    break;
+                    
+                case 'box':
+                    const boxGeo = new THREE.BoxGeometry(2.5, 1.5, 2);
+                    const boxMat = [
+                        new THREE.MeshPhongMaterial({ color: colors.right }),
+                        new THREE.MeshPhongMaterial({ color: colors.left }),
+                        new THREE.MeshPhongMaterial({ color: colors.top }),
+                        new THREE.MeshPhongMaterial({ color: colors.bottom }),
+                        new THREE.MeshPhongMaterial({ color: colors.front }),
+                        new THREE.MeshPhongMaterial({ color: colors.back })
+                    ];
+                    const box = new THREE.Mesh(boxGeo, boxMat);
+                    group.add(box);
+                    break;
+                    
+                case 'cylinder':
+                    const cylGeo = new THREE.CylinderGeometry(1, 1, 2.5, 32);
+                    const cylMat = new THREE.MeshPhongMaterial({ color: colors.front });
+                    const cylinder = new THREE.Mesh(cylGeo, cylMat);
+                    group.add(cylinder);
+                    break;
+                    
+                case 'cone':
+                    const coneGeo = new THREE.ConeGeometry(1.2, 2.5, 32);
+                    const coneMat = new THREE.MeshPhongMaterial({ color: colors.front });
+                    const cone = new THREE.Mesh(coneGeo, coneMat);
+                    group.add(cone);
+                    break;
+                    
+                case 'prism':
+                    const prismGeo = createPrismGeometry();
+                    const prismMat = new THREE.MeshPhongMaterial({ color: colors.front, side: THREE.DoubleSide });
+                    const prism = new THREE.Mesh(prismGeo, prismMat);
+                    group.add(prism);
+                    break;
+                    
+                case 'cylinder_cone':
+                    // 圆柱
+                    const cyl2Geo = new THREE.CylinderGeometry(0.8, 0.8, 2, 32);
+                    const cyl2Mat = new THREE.MeshPhongMaterial({ color: colors.front });
+                    const cyl2 = new THREE.Mesh(cyl2Geo, cyl2Mat);
+                    cyl2.position.y = -0.5;
+                    group.add(cyl2);
+                    // 圆锥
+                    const cone2Geo = new THREE.ConeGeometry(0.8, 1.5, 32);
+                    const cone2Mat = new THREE.MeshPhongMaterial({ color: colors.top });
+                    const cone2 = new THREE.Mesh(cone2Geo, cone2Mat);
+                    cone2.position.y = 1.25;
+                    group.add(cone2);
+                    break;
+                    
+                case 'box_cube':
+                    // 长方体
+                    const box2Geo = new THREE.BoxGeometry(2, 1.5, 2);
+                    const box2Mat = new THREE.MeshPhongMaterial({ color: colors.front });
+                    const box2 = new THREE.Mesh(box2Geo, box2Mat);
+                    box2.position.y = -0.25;
+                    group.add(box2);
+                    // 小正方体
+                    const cube2Geo = new THREE.BoxGeometry(1, 1, 1);
+                    const cube2Mat = new THREE.MeshPhongMaterial({ color: colors.top });
+                    const cube2 = new THREE.Mesh(cube2Geo, cube2Mat);
+                    cube2.position.y = 1;
+                    group.add(cube2);
+                    break;
+            }
+            
+            mesh = group;
+            scene.add(mesh);
+            
+            update2DViews();
+        }
+        
+        // 创建三棱柱几何体
+        function createPrismGeometry() {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0);
+            shape.lineTo(1.5, 0);
+            shape.lineTo(0.75, 1.5);
+            shape.lineTo(0, 0);
+            
+            const extrudeSettings = { depth: 1.5, bevelEnabled: false };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.translate(-0.75, -0.75, -0.75);
+            
+            return geometry;
+        }
+        
+        // 设置控制
+        function setupControls() {
+            const container = document.getElementById('container3d');
+            
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            container.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                rotationY += deltaX * 0.01;
+                rotationX += deltaY * 0.01;
+                rotationX = Math.max(-Math.PI, Math.min(Math.PI, rotationX));
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            container.addEventListener('mouseup', () => { isDragging = false; });
+            container.addEventListener('mouseleave', () => { isDragging = false; });
+            
+            // 触摸支持
+            container.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+            
+            container.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+                rotationY += deltaX * 0.01;
+                rotationX += deltaY * 0.01;
+                rotationX = Math.max(-Math.PI, Math.min(Math.PI, rotationX));
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+            
+            container.addEventListener('touchend', () => { isDragging = false; });
+            
+            // 按钮事件
+            document.querySelectorAll('[data-shape]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('[data-shape]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    createShape(btn.dataset.shape);
+                });
+            });
+            
+            document.getElementById('btnReset').addEventListener('click', () => {
+                rotationX = 0.3;
+                rotationY = 0.5;
+            });
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (mesh) {
+                mesh.rotation.y = rotationY;
+                mesh.rotation.x = rotationX;
+            }
+            
+            renderer.render(scene, camera);
+            update2DViews();
+        }
+        
+        // 初始化2D视图
+        function init2DViews() {
+            const canvasFront = document.getElementById('canvasFront');
+            const canvasLeft = document.getElementById('canvasLeft');
+            const canvasTop = document.getElementById('canvasTop');
+            
+            canvasFront.width = canvasFront.parentElement.clientWidth;
+            canvasFront.height = canvasFront.parentElement.clientHeight;
+            canvasLeft.width = canvasLeft.parentElement.clientWidth;
+            canvasLeft.height = canvasLeft.parentElement.clientHeight;
+            canvasTop.width = canvasTop.parentElement.clientWidth;
+            canvasTop.height = canvasTop.parentElement.clientHeight;
+        }
+        
+        // 更新2D视图
+        function update2DViews() {
+            drawView('canvasFront', 'front');
+            drawView('canvasLeft', 'left');
+            drawView('canvasTop', 'top');
+        }
+        
+        // 绘制单个视图
+        function drawView(canvasId, viewType) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            if (w === 0 || h === 0) return;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // 背景
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, w, h);
+            
+            // 网格
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= w; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, h);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= h; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(w, i);
+                ctx.stroke();
+            }
+            
+            // 中心点
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // 绘制投影
+            ctx.fillStyle = 'rgba(74, 144, 217, 0.3)';
+            ctx.strokeStyle = '#4a90d9';
+            ctx.lineWidth = 2;
+            
+            const size = Math.min(w, h) * 0.35;
+            
+            ctx.beginPath();
+            
+            if (viewType === 'front') {
+                ctx.rect(cx - size, cy - size, size * 2, size * 2);
+            } else if (viewType === 'left') {
+                ctx.rect(cx - size * 0.6, cy - size, size * 1.2, size * 2);
+            } else if (viewType === 'top') {
+                ctx.rect(cx - size, cy - size * 0.6, size * 2, size * 1.2);
+            }
+            
+            ctx.fill();
+            ctx.stroke();
+            
+            // 尺寸标注
+            ctx.font = 'bold 14px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            
+            if (viewType === 'front') {
+                ctx.fillText('宽: 4', cx, cy + size + 25);
+                ctx.save();
+                ctx.translate(cx - size - 25, cy);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('高: 4', 0, 0);
+                ctx.restore();
+            } else if (viewType === 'left') {
+                ctx.fillText('深: 2.4', cx, cy + size + 25);
+                ctx.save();
+                ctx.translate(cx - size * 0.6 - 25, cy);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('高: 4', 0, 0);
+                ctx.restore();
+            } else if (viewType === 'top') {
+                ctx.fillText('宽: 4', cx, cy + size * 0.6 + 25);
+                ctx.save();
+                ctx.translate(cx - size - 25, cy);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('深: 2.4', 0, 0);
+                ctx.restore();
+            }
+        }
+        
+        // 窗口大小变化
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('container3d');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            init2DViews();
+        });
+        
+        // 页面加载完成后初始化
+        window.onload = init;
+    </script>
+</body>
+</html>

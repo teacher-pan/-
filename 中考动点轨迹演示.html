@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中考动点轨迹演示工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 26px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        /* 题目选择按钮 - 横向紧凑排列 */
+        .problem-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .problem-tab {
+            padding: 10px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .problem-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .problem-tab.active {
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            border-color: #00d4ff;
+            color: #fff;
+        }
+        /* 主卡片 */
+        .main-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .card-header h2 {
+            font-size: 20px;
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+        .card-header p {
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.5;
+        }
+        /* Canvas 居中 */
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        canvas {
+            display: block;
+            background: #0a0a1a;
+            border-radius: 12px;
+        }
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .play-btn {
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            color: #fff;
+        }
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+        }
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .progress-container {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            width: 0%;
+            transition: width 0.05s linear;
+        }
+        .info {
+            font-size: 16px;
+            color: #ffd700;
+            min-width: 140px;
+            text-align: center;
+            font-weight: bold;
+        }
+        /* 图例 */
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+        }
+        /* 提示文字 */
+        .hint {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📐 中考动点轨迹演示工具</h1>
+    <div class="container">
+        <!-- 题目选择按钮 -->
+        <div class="problem-tabs">
+            <div class="problem-tab active" onclick="selectProblem(1)">1️⃣ 抛物线面积最值</div>
+            <div class="problem-tab" onclick="selectProblem(2)">2️⃣ 将军饮马</div>
+            <div class="problem-tab" onclick="selectProblem(3)">3️⃣ 手拉手旋转</div>
+            <div class="problem-tab" onclick="selectProblem(4)">4️⃣ 双动点中点</div>
+        </div>
+
+        <!-- 主展示区 -->
+        <div class="main-card">
+            <div class="card-header">
+                <h2 id="problem-title">1️⃣ 抛物线动点面积最值</h2>
+                <p id="problem-desc">抛物线 y = -x² + 4x + 5，A(1,0)、B(6,0)，C在抛物线上移动，求△ABC面积最大值</p>
+            </div>
+            
+            <div class="canvas-wrapper">
+                <canvas id="mainCanvas" width="800" height="500"></canvas>
+            </div>
+            
+            <div class="controls">
+                <button class="play-btn" id="playBtn" onclick="toggleAnimation()">▶ 播放</button>
+                <button class="reset-btn" onclick="resetAnimation()">⟲ 重置</button>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <span class="info" id="infoDisplay">面积: 0</span>
+            </div>
+            
+            <div class="legend" id="legend">
+                <span><span class="dot" style="background:#ff6b6b"></span> 点A</span>
+                <span><span class="dot" style="background:#4ecdc4"></span> 点B</span>
+                <span><span class="dot" style="background:#ffd700"></span> 点C</span>
+                <span><span class="dot" style="background:#00d4ff"></span> 高线</span>
+            </div>
+        </div>
+        
+        <p class="hint">💡 点击题目标签切换不同题型</p>
+    </div>
+
+    <script>
+        // 题目数据
+        const problems = {
+            1: {
+                title: '1️⃣ 抛物线动点面积最值',
+                desc: '抛物线 y = -x² + 4x + 5，A(1,0)、B(6,0)，C在抛物线上移动，求△ABC面积最大值',
+                legend: [
+                    { color: '#ff6b6b', label: '点A' },
+                    { color: '#4ecdc4', label: '点B' },
+                    { color: '#ffd700', label: '点C' },
+                    { color: '#00d4ff', label: '高线' }
+                ]
+            },
+            2: {
+                title: '2️⃣ 隐圆模型（将军饮马）',
+                desc: '正方形ABCD，边长6，P在BC边上移动，求PA+PE最小值（E是AD中点）',
+                legend: [
+                    { color: '#ff6b6b', label: '点P' },
+                    { color: '#4ecdc4', label: '点E' },
+                    { color: '#ffd700', label: 'PA+PE' },
+                    { color: 'transparent', style: 'border:1px dashed #888', label: '轨迹' }
+                ]
+            },
+            3: {
+                title: '3️⃣ 手拉手模型（旋转）',
+                desc: '等边△ABC固定，△ABD绕A点旋转60°，求C、D连线与AB的交点P轨迹',
+                legend: [
+                    { color: '#ff6b6b', label: '△ABC' },
+                    { color: '#4ecdc4', label: '△ABD' },
+                    { color: '#ffd700', label: '交点P' },
+                    { color: '#7c3aed', label: '轨迹' }
+                ]
+            },
+            4: {
+                title: '4️⃣ 双动点问题',
+                desc: '△ABC中，D在AB上移动，E在AC上移动，求DE中点的轨迹',
+                legend: [
+                    { color: '#ff6b6b', label: '点D' },
+                    { color: '#4ecdc4', label: '点E' },
+                    { color: '#ffd700', label: '中点M' },
+                    { color: '#7c3aed', label: '轨迹' }
+                ]
+            }
+        };
+
+        // 状态
+        let currentProblem = 1;
+        let playing = false;
+        let t = 0;
+        let animationId = null;
+
+        // 工具函数
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        // 选择题目
+        function selectProblem(num) {
+            currentProblem = num;
+            resetAnimation();
+            
+            // 更新标签样式
+            document.querySelectorAll('.problem-tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i + 1 === num);
+            });
+            
+            // 更新标题和描述
+            const problem = problems[num];
+            document.getElementById('problem-title').textContent = problem.title;
+            document.getElementById('problem-desc').textContent = problem.desc;
+            
+            // 更新图例
+            const legendEl = document.getElementById('legend');
+            legendEl.innerHTML = problem.legend.map(item => 
+                `<span><span class="dot" style="background:${item.color};${item.style || ''}"></span> ${item.label}</span>`
+            ).join('');
+            
+            // 绘制初始状态
+            drawCurrentProblem();
+        }
+
+        // 绘制当前题目
+        function drawCurrentProblem() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (currentProblem === 1) draw1(ctx, t);
+            else if (currentProblem === 2) draw2(ctx, t);
+            else if (currentProblem === 3) draw3(ctx, t);
+            else if (currentProblem === 4) draw4(ctx, t);
+        }
+
+        // ========== 题目1：抛物线动点面积最值 ==========
+        function draw1(ctx, t) {
+            const w = 800, h = 500;
+            const scale = 45;
+            const offsetX = 80, offsetY = h - 60;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // 坐标轴
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(offsetX, offsetY);
+            ctx.lineTo(w - 40, offsetY);
+            ctx.moveTo(offsetX, offsetY);
+            ctx.lineTo(offsetX, 40);
+            ctx.stroke();
+            
+            // 刻度
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Arial';
+            for (let i = 0; i <= 8; i++) {
+                const x = offsetX + i * scale;
+                ctx.fillText(i, x - 4, offsetY + 18);
+                if (i > 0 && i <= 8) {
+                    ctx.fillText(i, offsetX - 25, offsetY - i * scale + 4);
+                }
+            }
+            
+            // 抛物线 y = -x² + 4x + 5
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let px = -1; px <= 8; px += 0.05) {
+                const py = -px * px + 4 * px + 5;
+                const x = offsetX + px * scale;
+                const y = offsetY - py * scale;
+                if (px === -1) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // A(1,0), B(6,0)
+            const Ax = 1, Ay = 0;
+            const Bx = 6, By = 0;
+            const C_actual_x = 0.5 + t * 6;
+            const C_actual_y = -C_actual_x * C_actual_x + 4 * C_actual_x + 5;
+            
+            // 三角形ABC
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(offsetX + Ax * scale, offsetY - Ay * scale);
+            ctx.lineTo(offsetX + Bx * scale, offsetY - By * scale);
+            ctx.lineTo(offsetX + C_actual_x * scale, offsetY - C_actual_y * scale);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // 高线
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(offsetX + C_actual_x * scale, offsetY - C_actual_y * scale);
+            ctx.lineTo(offsetX + C_actual_x * scale, offsetY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 点
+            const drawDot = (x, y, color, label) => {
+                ctx.beginPath();
+                ctx.arc(offsetX + x * scale, offsetY - y * scale, 8, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText(label, offsetX + x * scale + 12, offsetY - y * scale + 5);
+            };
+            
+            drawDot(Ax, Ay, '#ff6b6b', 'A');
+            drawDot(Bx, By, '#4ecdc4', 'B');
+            drawDot(C_actual_x, C_actual_y, '#ffd700', 'C');
+            
+            // 计算面积
+            const base = Math.abs(Bx - Ax);
+            const height = C_actual_y;
+            const area = (base * height / 2).toFixed(2);
+            
+            document.getElementById('infoDisplay').textContent = '面积: ' + area;
+            document.getElementById('progressBar').style.width = (t * 100) + '%';
+        }
+
+        // ========== 题目2：隐圆模型 ==========
+        function draw2(ctx, t) {
+            const w = 800, h = 500;
+            const scale = 50;
+            const offsetX = 150, offsetY = h - 100;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // 正方形ABCD，边长6
+            const size = 6;
+            const A = { x: 2, y: 2 };
+            const B = { x: 2 + size, y: 2 };
+            const C = { x: 2 + size, y: 2 + size };
+            const D = { x: 2, y: 2 + size };
+            const E = { x: 2, y: 2 + size / 2 };
+            
+            // P在BC边上移动
+            const P = { x: 2 + size, y: 2 + t * size };
+            
+            // 正方形
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(
+                offsetX + A.x * scale, 
+                offsetY - C.y * scale, 
+                size * scale, 
+                size * scale
+            );
+            ctx.stroke();
+            
+            // 标注顶点
+            ctx.fillStyle = '#888';
+            ctx.font = 'bold 16px Arial';
+            const labels = [
+                { pt: A, label: 'A' },
+                { pt: B, label: 'B' },
+                { pt: C, label: 'C' },
+                { pt: D, label: 'D' }
+            ];
+            labels.forEach(({ pt, label }) => {
+                ctx.fillText(label, offsetX + pt.x * scale - 20, offsetY - pt.y * scale - 8);
+            });
+            
+            // E点
+            ctx.beginPath();
+            ctx.arc(offsetX + E.x * scale, offsetY - E.y * scale, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fill();
+            ctx.fillText('E', offsetX + E.x * scale - 20, offsetY - E.y * scale - 8);
+            
+            // P点
+            ctx.beginPath();
+            ctx.arc(offsetX + P.x * scale, offsetY - P.y * scale, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fill();
+            ctx.fillText('P', offsetX + P.x * scale + 12, offsetY - P.y * scale + 6);
+            
+            // PA + PE
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(offsetX + P.x * scale, offsetY - P.y * scale);
+            ctx.lineTo(offsetX + A.x * scale, offsetY - A.y * scale);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(offsetX + P.x * scale, offsetY - P.y * scale);
+            ctx.lineTo(offsetX + E.x * scale, offsetY - E.y * scale);
+            ctx.stroke();
+            
+            // PA+PE数值
+            const PA = Math.sqrt(Math.pow(P.x - A.x, 2) + Math.pow(P.y - A.y, 2));
+            const PE = Math.sqrt(Math.pow(P.x - E.x, 2) + Math.pow(P.y - E.y, 2));
+            const sum = (PA + PE).toFixed(2);
+            
+            document.getElementById('infoDisplay').textContent = 'PA+PE: ' + sum;
+            document.getElementById('progressBar').style.width = (t * 100) + '%';
+        }
+
+        // ========== 题目3：手拉手模型 ==========
+        function draw3(ctx, t) {
+            const w = 800, h = 500;
+            const scale = 60;
+            const offsetX = w / 2, offsetY = h / 2 + 40;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // 固定等边三角形ABC
+            const A = { x: 0, y: 0 };
+            const B = { x: 4, y: 0 };
+            const C = rotatePoint(B, A, -60);
+            
+            // 旋转的等边三角形ABD
+            const angle = t * 360;
+            const D = rotatePoint(B, A, angle);
+            
+            // 画△ABC
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(offsetX + A.x * scale, offsetY - A.y * scale);
+            ctx.lineTo(offsetX + B.x * scale, offsetY - B.y * scale);
+            ctx.lineTo(offsetX + C.x * scale, offsetY - C.y * scale);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // 画△ABD
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.beginPath();
+            ctx.moveTo(offsetX + A.x * scale, offsetY - A.y * scale);
+            ctx.lineTo(offsetX + B.x * scale, offsetY - B.y * scale);
+            ctx.lineTo(offsetX + D.x * scale, offsetY - D.y * scale);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // 求交点P
+            const P = getLineIntersection(A, B, C, D);
+            
+            // P点
+            if (P) {
+                ctx.beginPath();
+                ctx.arc(offsetX + P.x * scale, offsetY - P.y * scale, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffd700';
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('P', offsetX + P.x * scale + 14, offsetY - P.y * scale + 5);
+            }
+            
+            // 标注顶点
+            ctx.font = 'bold 16px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('A', offsetX + A.x * scale - 20, offsetY - A.y * scale - 8);
+            ctx.fillText('B', offsetX + B.x * scale + 8, offsetY - B.y * scale + 6);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillText('C', offsetX + C.x * scale + 8, offsetY - C.y * scale + 6);
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillText('D', offsetX + D.x * scale + 8, offsetY - D.y * scale + 6);
+            
+            // 画AB连线
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(offsetX + A.x * scale, offsetY - A.y * scale);
+            ctx.lineTo(offsetX + B.x * scale, offsetY - B.y * scale);
+            ctx.stroke();
+            
+            document.getElementById('infoDisplay').textContent = '角度: ' + Math.round(angle) + '°';
+            document.getElementById('progressBar').style.width = (t * 100) + '%';
+        }
+
+        function rotatePoint(px, py, angleDeg) {
+            const angleRad = angleDeg * Math.PI / 180;
+            const cos = Math.cos(angleRad);
+            const sin = Math.sin(angleRad);
+            return {
+                x: py.x + (px.x - py.x) * cos - (px.y - py.y) * sin,
+                y: py.y + (px.x - py.x) * sin + (px.y - py.y) * cos
+            };
+        }
+
+        function getLineIntersection(A, B, C, D) {
+            const x1 = A.x, y1 = A.y, x2 = B.x, y2 = B.y;
+            const x3 = C.x, y3 = C.y, x4 = D.x, y4 = D.y;
+            
+            const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (Math.abs(denom) < 0.0001) return null;
+            
+            const tt = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+            
+            return {
+                x: x1 + tt * (x2 - x1),
+                y: y1 + tt * (y2 - y1)
+            };
+        }
+
+        // ========== 题目4：双动点问题 ==========
+        function draw4(ctx, t) {
+            const w = 800, h = 500;
+            const scale = 40;
+            const offsetX = 100, offsetY = h - 80;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // 三角形ABC
+            const A = { x: 2, y: 8 };
+            const B = { x: 2, y: 2 };
+            const C = { x: 10, y: 2 };
+            
+            // D在AB上移动，E在AC上移动
+            const D = {
+                x: lerp(A.x, B.x, t),
+                y: lerp(A.y, B.y, t)
+            };
+            const E = {
+                x: lerp(A.x, C.x, t),
+                y: lerp(A.y, C.y, t)
+            };
+            
+            // DE中点M
+            const M = {
+                x: (D.x + E.x) / 2,
+                y: (D.y + E.y) / 2
+            };
+            
+            // 三角形ABC
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(offsetX + A.x * scale, offsetY - A.y * scale);
+            ctx.lineTo(offsetX + B.x * scale, offsetY - B.y * scale);
+            ctx.lineTo(offsetX + C.x * scale, offsetY - C.y * scale);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // DE连线
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(offsetX + D.x * scale, offsetY - D.y * scale);
+            ctx.lineTo(offsetX + E.x * scale, offsetY - E.y * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 标注三角形顶点
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('A', offsetX + A.x * scale - 20, offsetY - A.y * scale - 8);
+            ctx.fillText('B', offsetX + B.x * scale - 20, offsetY - B.y * scale + 6);
+            ctx.fillText('C', offsetX + C.x * scale + 8, offsetY - C.y * scale + 6);
+            
+            // D点
+            ctx.beginPath();
+            ctx.arc(offsetX + D.x * scale, offsetY - D.y * scale, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('D', offsetX + D.x * scale - 20, offsetY - D.y * scale - 8);
+            
+            // E点
+            ctx.beginPath();
+            ctx.arc(offsetX + E.x * scale, offsetY - E.y * scale, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fill();
+            ctx.fillText('E', offsetX + E.x * scale + 12, offsetY - E.y * scale + 6);
+            
+            // M点
+            ctx.beginPath();
+            ctx.arc(offsetX + M.x * scale, offsetY - M.y * scale, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffd700';
+            ctx.fill();
+            ctx.fillText('M', offsetX + M.x * scale + 12, offsetY - M.y * scale + 6);
+            
+            // M的轨迹
+            ctx.strokeStyle = '#7c3aed';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            for (let i = 0; i <= 50; i++) {
+                const ti = i / 50;
+                const tempD = {
+                    x: lerp(A.x, B.x, ti),
+                    y: lerp(A.y, B.y, ti)
+                };
+                const tempE = {
+                    x: lerp(A.x, C.x, ti),
+                    y: lerp(A.y, C.y, ti)
+                };
+                const tempM = {
+                    x: (tempD.x + tempE.x) / 2,
+                    y: (tempD.y + tempE.y) / 2
+                };
+                if (i === 0) {
+                    ctx.moveTo(offsetX + tempM.x * scale, offsetY - tempM.y * scale);
+                } else {
+                    ctx.lineTo(offsetX + tempM.x * scale, offsetY - tempM.y * scale);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            document.getElementById('infoDisplay').textContent = '中点M轨迹';
+            document.getElementById('progressBar').style.width = (t * 100) + '%';
+        }
+
+        // ========== 动画控制 ==========
+        function toggleAnimation() {
+            playing = !playing;
+            document.getElementById('playBtn').textContent = playing ? '⏸ 暂停' : '▶ 播放';
+            
+            if (playing) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            }
+        }
+
+        function resetAnimation() {
+            playing = false;
+            t = 0;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            document.getElementById('playBtn').textContent = '▶ 播放';
+            document.getElementById('progressBar').style.width = '0%';
+            drawCurrentProblem();
+        }
+
+        function animate() {
+            if (!playing) return;
+            
+            t += 0.005;
+            if (t >= 1) t = 0;
+            
+            drawCurrentProblem();
+            
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // ========== 初始化 ==========
+        window.onload = function() {
+            drawCurrentProblem();
+        };
+    </script>
+</body>
+</html>
