@@ -1,0 +1,3052 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中考动点轨迹演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #1a2a6c 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        /* 顶部标签栏 */
+        .tab-header {
+            background: linear-gradient(135deg, #2d3a4f, #1e2a3a);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .page-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-right: 30px;
+        }
+        .tab-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.1);
+            color: #aaa;
+        }
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76,175,80,0.4);
+        }
+        
+        /* 页面容器 */
+        .page-container {
+            display: none;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .page-container.active {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        /* 画布区域 */
+        .canvas-section {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        canvas {
+            display: block;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+        
+        /* 控制面板 */
+        .control-panel {
+            background: linear-gradient(145deg, #2d3a4f, #1e2a3a);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        /* 题目框 */
+        .topic-box {
+            background: linear-gradient(135deg, #fffef0, #fff8e1);
+            border-left: 5px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            color: #333;
+            font-size: 1.05em;
+            line-height: 1.8;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .topic-box strong {
+            color: #e65100;
+        }
+        
+        /* 按钮组 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        .btn-play {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            color: white;
+        }
+        .btn-play:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+        }
+        .btn-jump {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+        }
+        .btn-jump:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,152,0,0.4);
+        }
+        .btn-reset {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244,67,54,0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+        .btn-mode {
+            background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+            color: white;
+        }
+        .btn-mode.active {
+            background: linear-gradient(135deg, #7b1fa2, #6a1b9a);
+            box-shadow: 0 0 15px rgba(156, 39, 176, 0.5);
+        }
+        
+        /* 滑块容器 */
+        .slider-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .slider-label span:last-child {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #4caf50, #ff9800, #f44336);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        /* 数据展示 */
+        .data-display {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .data-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .data-item .label {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .data-item .value {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+        .data-item .value.pe { color: #4fc3f7; }
+        .data-item .value.pc { color: #ff7043; }
+        .data-item .value.sum { color: #ffd700; }
+        .data-item .value.optimal {
+            color: #76ff03;
+            text-shadow: 0 0 10px rgba(118,255,3,0.5);
+        }
+        .data-item .value.highlight {
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        
+        /* 公式框 */
+        .formula-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .formula-box h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .formula-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .step-num {
+            background: #ffd700;
+            color: #1a1a2e;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85em;
+            flex-shrink: 0;
+        }
+        
+        /* 图表区域 */
+        .graph-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .graph-section h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        /* 最小值提示 */
+        .min-hint {
+            text-align: center;
+            padding: 12px;
+            background: linear-gradient(135deg, #ffd700, #ff8f00);
+            color: #1a1a2e;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: none;
+            animation: pulse 1.5s infinite;
+        }
+        .min-hint.show {
+            display: block;
+        }
+        
+        /* 图例 */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        /* 手拉手模型特有样式 */
+        .section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .section-title {
+            color: #ffd700;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-group:last-child {
+            margin-bottom: 0;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .step-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #555;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .step-dot.active {
+            background: #4caf50;
+            color: white;
+        }
+        .step-dot.completed {
+            background: #2e7d32;
+            color: white;
+        }
+        .formula-result {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        /* 矩形折叠特有样式 */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-label {
+            font-size: 16px;
+        }
+        .stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        .min-indicator {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+        .min-indicator.show {
+            display: block;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #ffd700; }
+            to { box-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        }
+        .min-indicator span {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .trajectory-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.3);
+            transition: 0.3s;
+            border-radius: 30px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        /* 瓜豆原理特有样式 */
+        .panel-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .principle-box {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 5px solid #1976d2;
+        }
+        .principle-box h3 {
+            color: #1565c0;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .principle-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #0d47a1;
+        }
+        .principle-item .num {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #1976d2;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .principle-item .highlight-text {
+            color: #c62828;
+            font-weight: bold;
+        }
+        .answer-box {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-left: 5px solid #388e3c;
+        }
+        .answer-box h3 {
+            color: #2e7d32;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .answer-box .answer {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1b5e20;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+        }
+        .legend-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .legend-line {
+            width: 24px;
+            height: 3px;
+            margin-right: 10px;
+        }
+        
+        /* 页脚 */
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部标签栏 -->
+    <div class="tab-header">
+        <div class="page-title">📐 中考动点轨迹演示</div>
+        <button class="tab-btn active" onclick="switchTab(1)" id="tab1">1️⃣ 将军饮马</button>
+        <button class="tab-btn" onclick="switchTab(2)" id="tab2">2️⃣ 手拉手模型</button>
+        <button class="tab-btn" onclick="switchTab(3)" id="tab3">3️⃣ 矩形折叠隐圆</button>
+        <button class="tab-btn" onclick="switchTab(4)" id="tab4">4️⃣ 瓜豆原理</button>
+    </div>
+
+    <!-- ========== 页面1: 将军饮马 ========== -->
+    <div class="page-container active" id="page1">
+        <div class="canvas-section">
+            <canvas id="mainCanvas1" width="700" height="750"></canvas>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color" style="background:#1976d2"></div>正方形</div>
+                <div class="legend-item"><div class="legend-color" style="background:#e91e63"></div>对称线EE'</div>
+                <div class="legend-item"><div class="legend-color" style="background:#4caf50"></div>CE'连线</div>
+                <div class="legend-item"><div class="legend-color" style="background:#ff9800"></div>PE/PE'</div>
+                <div class="legend-item"><div class="legend-color" style="background:#9c27b0"></div>PC</div>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="topic-box">
+                <strong>题目：</strong>正方形ABCD边长为4，E是CD的中点，P是AB上的动点，求PE+PC的最小值。
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-play" id="btnPlay1">▶ 播放动画</button>
+                <button class="btn btn-jump" id="btnJump1">🎯 最小值点</button>
+                <button class="btn btn-reset" id="btnReset1">↺ 重置</button>
+            </div>
+            
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>P点位置</span>
+                    <span id="posValue1">P = (0, 4)</span>
+                </div>
+                <input type="range" id="sliderP1" min="0" max="4" step="0.01" value="0">
+            </div>
+            
+            <div class="data-display">
+                <div class="data-item">
+                    <div class="label">PE 长度</div>
+                    <div class="value pe" id="valPE1">-</div>
+                </div>
+                <div class="data-item">
+                    <div class="label">PC 长度</div>
+                    <div class="value pc" id="valPC1">-</div>
+                </div>
+                <div class="data-item">
+                    <div class="label">PE + PC</div>
+                    <div class="value sum" id="valSum1">-</div>
+                </div>
+                <div class="data-item">
+                    <div class="label">最小值 2√17</div>
+                    <div class="value optimal" id="valMin1">≈ 8.246</div>
+                </div>
+            </div>
+            
+            <div class="min-hint" id="minHint1">
+                ✨ PE + PC 最小值 = 2√17 ≈ 8.246
+            </div>
+            
+            <div class="formula-box">
+                <h3>📖 数学原理</h3>
+                <div class="formula-step">
+                    <div class="step-num">1</div>
+                    <div>作E关于AB的对称点E'，E'=(2,8)</div>
+                </div>
+                <div class="formula-step">
+                    <div class="step-num">2</div>
+                    <div>由对称性：PE = PE'</div>
+                </div>
+                <div class="formula-step">
+                    <div class="step-num">3</div>
+                    <div>PE + PC = PE' + PC ≥ CE'</div>
+                </div>
+                <div class="formula-step">
+                    <div class="step-num">4</div>
+                    <div>CE' = √(4+64) = 2√17</div>
+                </div>
+                <div class="formula-step">
+                    <div class="step-num">5</div>
+                    <div>当P在CE'与AB交点时取等号</div>
+                </div>
+            </div>
+            
+            <div class="graph-section">
+                <h3>📈 PE + PC 变化曲线</h3>
+                <canvas id="graphCanvas1" width="330" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 页面2: 手拉手模型 ========== -->
+    <div class="page-container" id="page2">
+        <div class="canvas-section">
+            <canvas id="mainCanvas2" width="600" height="500"></canvas>
+        </div>
+        
+        <div class="control-panel">
+            <div class="topic-box">
+                <strong>题目：</strong>等边三角形ABC边长为4，点D在BC上且BD=1，将△ABD绕点A逆时针旋转60°得到△ACE，连接DE。<br>
+                <strong>（1）</strong>求证：△ADE是等边三角形<br>
+                <strong>（2）</strong>求DE的长
+            </div>
+            
+            <div class="section">
+                <div class="section-title">动画控制</div>
+                <div class="btn-group">
+                    <button class="btn btn-play" id="playBtn2">▶ 播放旋转动画</button>
+                    <button class="btn btn-secondary" id="stepBtn2">📋 逐步演示</button>
+                    <button class="btn btn-reset" id="resetBtn2">↺ 重置</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">参数调节</div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>旋转角度</span>
+                        <span id="angleValue2">0°</span>
+                    </div>
+                    <input type="range" id="angleSlider2" min="0" max="60" value="0" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>BD长度</span>
+                        <span id="bdValue2">1.0</span>
+                    </div>
+                    <input type="range" id="bdSlider2" min="0.5" max="3.5" value="1" step="0.1">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">实时数据</div>
+                <div class="data-display">
+                    <div class="data-item">
+                        <div class="label">旋转角度</div>
+                        <div class="value" id="showAngle2">0°</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="label">AD 长度</div>
+                        <div class="value" id="showAD2">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="label">DE 长度</div>
+                        <div class="value" id="showDE2">-</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="label">∠DAE 角度</div>
+                        <div class="value" id="showAngleDAE2">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">证明步骤</div>
+                <div class="step-indicator">
+                    <div class="step-dot active" id="step1_2">1</div>
+                    <div class="step-dot" id="step2_2">2</div>
+                    <div class="step-dot" id="step3_2">3</div>
+                    <div class="step-dot" id="step4_2">4</div>
+                    <div class="step-dot" id="step5_2">5</div>
+                    <div class="step-dot" id="step6_2">6</div>
+                </div>
+            </div>
+            
+            <div class="formula-result">
+                <div id="formulaText2" style="color:#ffd700;font-weight:bold;">等边△ABC，边长=4</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 页面3: 矩形折叠 ========== -->
+    <div class="page-container" id="page3">
+        <div class="canvas-section">
+            <canvas id="mainCanvas3" width="700" height="550"></canvas>
+            <div class="legend">
+                <div class="legend-item"><span class="legend-color" style="background:#3498db;"></span>矩形ABCD</div>
+                <div class="legend-item"><span class="legend-color" style="background:#e74c3c;"></span>点B'</div>
+                <div class="legend-item"><span class="legend-color" style="background:#2ecc71;opacity:0.7;"></span>折叠三角形</div>
+                <div class="legend-item"><span class="legend-color" style="background:#f39c12;"></span>AB'连线</div>
+                <div class="legend-item"><span class="legend-color" style="background:#9b59b6;opacity:0.5;"></span>隐圆(半径3)</div>
+                <div class="legend-item"><span class="legend-color" style="background:#ff4500;"></span>B'轨迹</div>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="topic-box">
+                <strong>题目：</strong>矩形ABCD，AB=4，BC=3，M是AB上任意一点，将矩形沿CM折叠，使点B落在B'处，连接AB'，当点A与点B'的距离最小时，求BM的长。
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📊 实时数据</div>
+                <div class="stat-row">
+                    <span class="stat-label">BM 长度</span>
+                    <span class="stat-value" id="bmValue3">2.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">AB' 长度</span>
+                    <span class="stat-value" id="abValue3">3.61</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">∠MCB' 角度</span>
+                    <span class="stat-value" id="angleValue3">60.0°</span>
+                </div>
+                <div class="min-indicator" id="minIndicator3">
+                    <span>🎯 最小值达到！AB' = 2</span><br>
+                    <span>此时 BM = 1.5</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🎛️ 参数控制</div>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>BM 长度 (0 ~ 4)</span>
+                        <span id="sliderValue3">2.00</span>
+                    </div>
+                    <input type="range" id="bmSlider3" min="0" max="4" step="0.01" value="2">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="playBtn3">▶ 播放动画 (A→B)</button>
+                    <button class="btn btn-reset" id="resetBtn3">↺ 重置到最小值点</button>
+                </div>
+                <button class="btn btn-play" id="clearTrailBtn3">🗑️ 清除轨迹</button>
+                <div class="trajectory-toggle">
+                    <span style="font-size:14px;">显示轨迹：</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="trajectoryToggle3" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="graph-section">
+                <h3>📈 AB' 变化曲线</h3>
+                <canvas id="graphCanvas3" width="330" height="180"></canvas>
+                <div class="formula-box" style="margin-top:10px;background:rgba(0,0,0,0.2);">
+                    <div style="text-align:center;color:#ffd700;">最小值: AB' = AC - CB' = 5 - 3 = 2</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 页面4: 瓜豆原理 ========== -->
+    <div class="page-container" id="page4">
+        <div class="canvas-section">
+            <div style="text-align:center;font-size:24px;font-weight:bold;color:#1a237e;margin-bottom:15px;padding:10px;background:linear-gradient(90deg,#e8eaf6,#c5cae9);border-radius:8px;" id="canvasTitle4">瓜豆原理：种线得线</div>
+            <canvas id="mainCanvas4" width="600" height="500"></canvas>
+        </div>
+        
+        <div class="control-panel">
+            <div class="topic-box">
+                <strong>题目：</strong>正方形ABCD边长为2，点E从A沿AB运动到B，以DE为边在左侧作正方形DEFG，求点F的运动路径长。
+            </div>
+            
+            <div class="panel-box">
+                <div class="btn-group">
+                    <button class="btn btn-play" id="playBtn4">▶ 播放动画</button>
+                    <button class="btn btn-reset" id="resetBtn4">⟳ 重置</button>
+                </div>
+                <button class="btn btn-mode" id="modeBtn4">🔄 切换：种圆得圆</button>
+                
+                <div class="slider-container" style="margin-top:15px;">
+                    <div class="slider-label">
+                        <span id="sliderLabel4">E 在 AB 上的位置</span>
+                        <span id="sliderValue4">t = 0.00</span>
+                    </div>
+                    <input type="range" id="positionSlider4" min="0" max="2" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <div class="panel-box" style="background:rgba(255,255,255,0.1);">
+                <div style="font-size:16px;font-weight:bold;color:#ffd700;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,0.2);">📊 实时数据</div>
+                <div class="stat-row">
+                    <span class="stat-label">E 坐标</span>
+                    <span class="stat-value" id="ecoord4">(0.00, 2.00)</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">F 坐标</span>
+                    <span class="stat-value" id="fcoord4">(-2.00, 0.00)</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">AE 长度</span>
+                    <span class="stat-value" id="aeLen4">0.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">DE 长度</span>
+                    <span class="stat-value" id="deLen4">2.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">DF 长度</span>
+                    <span class="stat-value" id="dfLen4">2.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">∠EDF</span>
+                    <span class="stat-value">90°</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">F 路径长</span>
+                    <span class="stat-value highlight" id="pathLen4">0.00</span>
+                </div>
+            </div>
+            
+            <div class="panel-box principle-box" id="principleBox4">
+                <h3>🧠 瓜豆原理分析</h3>
+                <div class="principle-item">
+                    <span class="num">1</span>
+                    <span class="content" id="principle1Text4"><span class="highlight-text">定比</span>：DE = DF = √(t²+4)，始终相等</span>
+                </div>
+                <div class="principle-item">
+                    <span class="num">2</span>
+                    <span class="content" id="principle2Text4"><span class="highlight-text">定角</span>：∠EDF = 90°（正方形内角）</span>
+                </div>
+                <div class="principle-item">
+                    <span class="num">3</span>
+                    <span class="content" id="principle3Text4"><span class="highlight-text">种线得线</span>：E在线段AB上运动</span>
+                </div>
+                <div class="principle-item">
+                    <span class="num">4</span>
+                    <span class="content" id="principle4Text4">F也在<span class="highlight-text">线段</span>上运动（x = -2）</span>
+                </div>
+                <div class="principle-item">
+                    <span class="num">5</span>
+                    <span class="content" id="principle5Text4">F轨迹：从(-2,0)到(-2,2)，<span class="highlight-text">路径长=2</span></span>
+                </div>
+            </div>
+            
+            <div class="panel-box answer-box">
+                <h3>✅ 最终答案</h3>
+                <div class="answer" id="answer4">路径长 = 2</div>
+            </div>
+            
+            <div class="panel-box legend-box">
+                <div style="font-weight:bold;margin-bottom:10px;font-size:14px;">图例说明</div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#2196f3;"></div>
+                    <span>点 E（主动点）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#f44336;"></div>
+                    <span>点 F（从动点）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#4caf50;"></div>
+                    <span>点 D（定点）</span>
+                </div>
+                <div class="legend-item" id="legendE4">
+                    <div class="legend-line" style="background:#2196f3;"></div>
+                    <span id="legendEText4">E 的轨迹（AB）</span>
+                </div>
+                <div class="legend-item" id="legendF4">
+                    <div class="legend-line" style="background:#f44336;"></div>
+                    <span id="legendFText4">F 的轨迹</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        拖动滑块或点击画布调整参数，观察动点轨迹变化规律
+    </footer>
+
+    <script>
+        // ==================== 全局状态管理 ====================
+        let currentPage = 1;
+        let animationIntervals = {};
+
+        // ==================== 标签切换 ====================
+        function switchTab(pageNum) {
+            // 停止所有动画
+            stopAllAnimations();
+            
+            // 更新标签样式
+            for (let i = 1; i <= 4; i++) {
+                const tabBtn = document.getElementById('tab' + i);
+                const page = document.getElementById('page' + i);
+                if (tabBtn && page) {
+                    if (i === pageNum) {
+                        tabBtn.classList.add('active');
+                        page.classList.add('active');
+                    } else {
+                        tabBtn.classList.remove('active');
+                        page.classList.remove('active');
+                    }
+                }
+            }
+            
+            currentPage = pageNum;
+            
+            // 切换到对应页面时重绘
+            setTimeout(() => {
+                switch(pageNum) {
+                    case 1: drawMain1(); drawGraph1(); break;
+                    case 2: draw2(); break;
+                    case 3: draw3(); break;
+                    case 4: draw4(); updateDisplay4(); break;
+                }
+            }, 50);
+        }
+
+        function stopAllAnimations() {
+            // 停止将军饮马动画
+            if (animationIntervals['jiang1']) {
+                clearInterval(animationIntervals['jiang1']);
+                animationIntervals['jiang1'] = null;
+            }
+            
+            // 停止手拉手动画
+            if (animationIntervals['shoulashou']) {
+                clearInterval(animationIntervals['shoulashou']);
+                animationIntervals['shoulashou'] = null;
+            }
+            
+            // 停止矩形折叠动画
+            if (animationIntervals['juxing']) {
+                clearInterval(animationIntervals['juxing']);
+                animationIntervals['juxing'] = null;
+            }
+            
+            // 停止瓜豆动画
+            if (animationIntervals['guadou']) {
+                clearInterval(animationIntervals['guadou']);
+                animationIntervals['guadou'] = null;
+            }
+            
+            // 重置按钮状态
+            const btnPlay1 = document.getElementById('btnPlay1');
+            if (btnPlay1) btnPlay1.textContent = '▶ 播放动画';
+            
+            const playBtn3 = document.getElementById('playBtn3');
+            if (playBtn3) playBtn3.textContent = '▶ 播放动画 (A→B)';
+            
+            const playBtn4 = document.getElementById('playBtn4');
+            if (playBtn4) playBtn4.textContent = '▶ 播放动画';
+        }
+
+        // ==================== 将军饮马问题 ====================
+        (function() {
+            const canvas = document.getElementById('mainCanvas1');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            const graphCanvas = document.getElementById('graphCanvas1');
+            const graphCtx = graphCanvas ? graphCanvas.getContext('2d') : null;
+            
+            const centerX = 350 - 2 * 55;
+            const centerY = 375 + 4 * 55;
+            const scale = 55;
+            
+            const A = { x: 0, y: 4 };
+            const B = { x: 4, y: 4 };
+            const C = { x: 4, y: 0 };
+            const D = { x: 0, y: 0 };
+            const E = { x: 2, y: 0 };
+            const E_prime = { x: 2, y: 8 };
+            const optimalP = { x: 3, y: 4 };
+            
+            let t = 0;
+            let isPlaying = false;
+            
+            function toCanvas(x, y) {
+                return { x: centerX + x * scale, y: centerY - y * scale };
+            }
+            
+            function calcPE(px) {
+                return Math.sqrt((px - E.x) ** 2 + (4 - E.y) ** 2);
+            }
+            
+            function calcPC(px) {
+                return Math.sqrt((4 - px) ** 2 + 4 ** 2);
+            }
+            
+            window.drawMain1 = function() {
+                if (!ctx || !canvas) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 背景网格
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 0.5;
+                for (let i = -1; i <= 5; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + i * scale, centerY - 9 * scale);
+                    ctx.lineTo(centerX + i * scale, centerY + 1 * scale);
+                    ctx.stroke();
+                }
+                for (let i = -1; i <= 9; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - 1 * scale, centerY - i * scale);
+                    ctx.lineTo(centerX + 5 * scale, centerY - i * scale);
+                    ctx.stroke();
+                }
+                
+                // AB线
+                const lineY = 4;
+                const pA = toCanvas(0, lineY);
+                const pB = toCanvas(4, lineY);
+                
+                ctx.strokeStyle = '#1976d2';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(pA.x, pA.y);
+                ctx.lineTo(pB.x, pB.y);
+                ctx.stroke();
+                
+                // 虚线延长线
+                ctx.strokeStyle = '#e91e63';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 6]);
+                ctx.beginPath();
+                ctx.moveTo(centerX - 1 * scale, pA.y);
+                ctx.lineTo(centerX + 5 * scale, pA.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // 正方形其他边
+                ctx.strokeStyle = '#1976d2';
+                ctx.lineWidth = 3;
+                const pC = toCanvas(4, 0);
+                const pD = toCanvas(0, 0);
+                
+                ctx.beginPath();
+                ctx.moveTo(pB.x, pB.y);
+                ctx.lineTo(pC.x, pC.y);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(pC.x, pC.y);
+                ctx.lineTo(pD.x, pD.y);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(pD.x, pD.y);
+                ctx.lineTo(pA.x, pA.y);
+                ctx.stroke();
+                
+                // E点
+                const pE = toCanvas(E.x, E.y);
+                ctx.fillStyle = '#d32f2f';
+                ctx.beginPath();
+                ctx.arc(pE.x, pE.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // E'点
+                const pE_prime = toCanvas(E_prime.x, E_prime.y);
+                ctx.fillStyle = '#9c27b0';
+                ctx.beginPath();
+                ctx.arc(pE_prime.x, pE_prime.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 对称线EE'
+                ctx.strokeStyle = '#e91e63';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(pE.x, pE.y);
+                ctx.lineTo(pE_prime.x, pE_prime.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // CE'连线
+                ctx.strokeStyle = '#4caf50';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(pC.x, pC.y);
+                ctx.lineTo(pE_prime.x, pE_prime.y);
+                ctx.stroke();
+                
+                // P点
+                const pP = toCanvas(t, 4);
+                const isOptimal = Math.abs(t - 3) < 0.05;
+                
+                if (isOptimal) {
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 20;
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(pP.x, pP.y, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.fillStyle = '#ff9800';
+                    ctx.beginPath();
+                    ctx.arc(pP.x, pP.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // PE线
+                ctx.strokeStyle = '#ff9800';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(pP.x, pP.y);
+                ctx.lineTo(pE.x, pE.y);
+                ctx.stroke();
+                
+                // PE'线
+                ctx.strokeStyle = '#ff9800';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.moveTo(pP.x, pP.y);
+                ctx.lineTo(pE_prime.x, pE_prime.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // PC线
+                ctx.strokeStyle = '#9c27b0';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(pP.x, pP.y);
+                ctx.lineTo(pC.x, pC.y);
+                ctx.stroke();
+                
+                // 顶点标注
+                const labels = [
+                    { point: A, text: 'A', color: '#1976d2' },
+                    { point: B, text: 'B', color: '#1976d2' },
+                    { point: C, text: 'C', color: '#1976d2' },
+                    { point: D, text: 'D', color: '#1976d2' },
+                    { point: E, text: 'E', color: '#d32f2f' },
+                    { point: E_prime, text: "E'", color: '#9c27b0' },
+                    { point: optimalP, text: 'P₀', color: '#ffd700' }
+                ];
+                
+                labels.forEach(label => {
+                    const pos = toCanvas(label.point.x, label.point.y);
+                    ctx.fillStyle = label.color;
+                    ctx.font = 'bold 18px Microsoft YaHei';
+                    ctx.fillText(label.text, pos.x + 12, pos.y - 8);
+                });
+                
+                // P动态标注
+                ctx.fillStyle = isOptimal ? '#ffd700' : '#ff9800';
+                ctx.font = 'bold 18px Microsoft YaHei';
+                ctx.fillText(`P(${t.toFixed(1)},4)`, pP.x + 12, pP.y - 8);
+                
+                // 边长标注
+                ctx.fillStyle = '#1976d2';
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillText('4', centerX + 2 * scale + 8, centerY - 2 * scale + 5);
+                ctx.fillText('4', centerX + 4.5 * scale, centerY - 2 * scale);
+                
+                // E'标注
+                ctx.fillStyle = '#e91e63';
+                ctx.font = '14px Microsoft YaHei';
+                ctx.fillText("E'(2,8)", pE_prime.x - 50, pE_prime.y - 15);
+                
+                // PE=PE'标注
+                const midX = (pP.x + pE_prime.x) / 2;
+                const midY = (pP.y + pE_prime.y) / 2;
+                ctx.fillStyle = '#ff9800';
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillText('PE=PE\'', midX - 15, midY - 10);
+                
+                // CE'距离标注
+                const ceDist = Math.sqrt(68).toFixed(2);
+                const ceMidX = (pC.x + pE_prime.x) / 2 - 20;
+                const ceMidY = (pC.y + pE_prime.y) / 2;
+                ctx.fillStyle = '#4caf50';
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillText(`CE'=${ceDist}`, ceMidX, ceMidY);
+                
+                updateDataDisplay1(isOptimal);
+            };
+            
+            function updateDataDisplay1(isOptimal) {
+                const elPE = document.getElementById('valPE1');
+                const elPC = document.getElementById('valPC1');
+                const elSum = document.getElementById('valSum1');
+                const elMinHint = document.getElementById('minHint1');
+                
+                if (!elPE || !elPC || !elSum || !elMinHint) return;
+                
+                const pe = calcPE(t);
+                const pc = calcPC(t);
+                const sum = pe + pc;
+                
+                elPE.textContent = pe.toFixed(3);
+                elPC.textContent = pc.toFixed(3);
+                elSum.textContent = sum.toFixed(3);
+                
+                if (isOptimal) {
+                    elSum.classList.add('optimal');
+                    elSum.style.color = '#76ff03';
+                    elMinHint.classList.add('show');
+                } else {
+                    elSum.classList.remove('optimal');
+                    elSum.style.color = '';
+                    elMinHint.classList.remove('show');
+                }
+            }
+            
+            window.drawGraph1 = function() {
+                if (!graphCtx || !graphCanvas) return;
+                
+                const gCtx = graphCtx;
+                const w = graphCanvas.width;
+                const h = graphCanvas.height;
+                const padding = { left: 45, right: 20, top: 20, bottom: 35 };
+                const graphW = w - padding.left - padding.right;
+                const graphH = h - padding.top - padding.bottom;
+                
+                gCtx.clearRect(0, 0, w, h);
+                
+                gCtx.fillStyle = 'rgba(0,0,0,0.3)';
+                gCtx.fillRect(padding.left, padding.top, graphW, graphH);
+                
+                gCtx.strokeStyle = '#666';
+                gCtx.lineWidth = 1;
+                
+                gCtx.beginPath();
+                gCtx.moveTo(padding.left, h - padding.bottom);
+                gCtx.lineTo(w - padding.right, h - padding.bottom);
+                gCtx.stroke();
+                
+                gCtx.beginPath();
+                gCtx.moveTo(padding.left, h - padding.bottom);
+                gCtx.lineTo(padding.left, padding.top);
+                gCtx.stroke();
+                
+                gCtx.fillStyle = '#aaa';
+                gCtx.font = '11px Microsoft YaHei';
+                gCtx.fillText('PE+PC', padding.left - 38, h / 2);
+                gCtx.fillText('8.5', padding.left - 28, padding.top + 5);
+                gCtx.fillText('8.0', padding.left - 28, h - padding.bottom - 5);
+                gCtx.fillText('7.5', padding.left - 28, h - padding.bottom + 35);
+                
+                gCtx.fillText('P点位置 x', w / 2, h - 3);
+                gCtx.fillText('0', padding.left - 5, h - padding.bottom + 15);
+                gCtx.fillText('4', w - padding.right - 5, h - padding.bottom + 15);
+                
+                for (let y = 7.5; y <= 8.5; y += 0.5) {
+                    const yPos = padding.top + graphH * (1 - (y - 7.5) / 1);
+                    gCtx.strokeStyle = '#444';
+                    gCtx.beginPath();
+                    gCtx.moveTo(padding.left - 3, yPos);
+                    gCtx.lineTo(padding.left, yPos);
+                    gCtx.stroke();
+                }
+                
+                for (let x = 0; x <= 4; x += 1) {
+                    const xPos = padding.left + graphW * (x / 4);
+                    gCtx.strokeStyle = '#444';
+                    gCtx.beginPath();
+                    gCtx.moveTo(xPos, h - padding.bottom);
+                    gCtx.lineTo(xPos, h - padding.bottom + 3);
+                    gCtx.stroke();
+                }
+                
+                const minVal = 2 * Math.sqrt(17);
+                gCtx.strokeStyle = '#2196f3';
+                gCtx.lineWidth = 2;
+                gCtx.beginPath();
+                
+                for (let x = 0; x <= 4; x += 0.05) {
+                    const pe = calcPE(x);
+                    const pc = calcPC(x);
+                    const sum = pe + pc;
+                    
+                    const px = padding.left + graphW * (x / 4);
+                    const py = padding.top + graphH * (1 - (sum - 7.5) / 1);
+                    
+                    if (x === 0) {
+                        gCtx.moveTo(px, py);
+                    } else {
+                        gCtx.lineTo(px, py);
+                    }
+                }
+                gCtx.stroke();
+                
+                const minY = padding.top + graphH * (1 - (minVal - 7.5) / 1);
+                gCtx.strokeStyle = '#ffd700';
+                gCtx.lineWidth = 1;
+                gCtx.setLineDash([5, 3]);
+                gCtx.beginPath();
+                gCtx.moveTo(padding.left, minY);
+                gCtx.lineTo(w - padding.right, minY);
+                gCtx.stroke();
+                gCtx.setLineDash([]);
+                
+                const optX = padding.left + graphW * (3 / 4);
+                gCtx.fillStyle = '#ffd700';
+                gCtx.beginPath();
+                gCtx.arc(optX, minY, 6, 0, Math.PI * 2);
+                gCtx.fill();
+                
+                gCtx.fillStyle = '#ffd700';
+                gCtx.font = 'bold 12px Microsoft YaHei';
+                gCtx.fillText(`最小值\n2√17≈${minVal.toFixed(2)}`, optX - 5, minY - 15);
+                
+                const pe = calcPE(t);
+                const pc = calcPC(t);
+                const sum = pe + pc;
+                const currX = padding.left + graphW * (t / 4);
+                const currY = padding.top + graphH * (1 - (sum - 7.5) / 1);
+                
+                gCtx.fillStyle = '#ff9800';
+                gCtx.beginPath();
+                gCtx.arc(currX, currY, 5, 0, Math.PI * 2);
+                gCtx.fill();
+                
+                gCtx.strokeStyle = '#ff9800';
+                gCtx.lineWidth = 1;
+                gCtx.setLineDash([3, 3]);
+                gCtx.beginPath();
+                gCtx.moveTo(currX, currY);
+                gCtx.lineTo(currX, h - padding.bottom);
+                gCtx.stroke();
+                gCtx.setLineDash([]);
+            };
+            
+            function updateP1(newT) {
+                t = Math.max(0, Math.min(4, newT));
+                const sliderEl = document.getElementById('sliderP1');
+                const posEl = document.getElementById('posValue1');
+                
+                if (sliderEl) sliderEl.value = t;
+                if (posEl) posEl.textContent = `P = (${t.toFixed(2)}, 4)`;
+                
+                drawMain1();
+                drawGraph1();
+            }
+            
+            // 事件绑定
+            const slider = document.getElementById('sliderP1');
+            const btnPlay = document.getElementById('btnPlay1');
+            const btnJump = document.getElementById('btnJump1');
+            const btnReset = document.getElementById('btnReset1');
+            
+            if (slider) {
+                slider.addEventListener('input', function() {
+                    updateP1(parseFloat(this.value));
+                });
+            }
+            
+            if (btnPlay) {
+                btnPlay.addEventListener('click', function() {
+                    if (isPlaying) {
+                        clearInterval(animationIntervals['jiang1']);
+                        animationIntervals['jiang1'] = null;
+                        isPlaying = false;
+                        this.textContent = '▶ 播放动画';
+                    } else {
+                        isPlaying = true;
+                        this.textContent = '⏸ 暂停';
+                        let direction = 1;
+                        animationIntervals['jiang1'] = setInterval(function() {
+                            t += 0.03 * direction;
+                            if (t >= 4) direction = -1;
+                            if (t <= 0) direction = 1;
+                            updateP1(t);
+                        }, 20);
+                    }
+                });
+            }
+            
+            if (btnJump) {
+                btnJump.addEventListener('click', function() {
+                    if (isPlaying) {
+                        clearInterval(animationIntervals['jiang1']);
+                        animationIntervals['jiang1'] = null;
+                        isPlaying = false;
+                        const playBtn = document.getElementById('btnPlay1');
+                        if (playBtn) playBtn.textContent = '▶ 播放动画';
+                    }
+                    const startT = t;
+                    const endT = 3;
+                    let progress = 0;
+                    const jumpAnim = setInterval(function() {
+                        progress += 0.12;
+                        if (progress >= 1) {
+                            progress = 1;
+                            clearInterval(jumpAnim);
+                        }
+                        const eased = 1 - Math.pow(1 - progress, 3);
+                        updateP1(startT + (endT - startT) * eased);
+                    }, 30);
+                });
+            }
+            
+            if (btnReset) {
+                btnReset.addEventListener('click', function() {
+                    if (isPlaying) {
+                        clearInterval(animationIntervals['jiang1']);
+                        animationIntervals['jiang1'] = null;
+                        isPlaying = false;
+                        const playBtn = document.getElementById('btnPlay1');
+                        if (playBtn) playBtn.textContent = '▶ 播放动画';
+                    }
+                    updateP1(0);
+                });
+            }
+            
+            if (canvas) {
+                canvas.addEventListener('click', function(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const clickY = e.clientY - rect.top;
+                    
+                    const mathX = (clickX - centerX) / scale;
+                    const mathY = (centerY - clickY) / scale;
+                    
+                    if (Math.abs(mathY - 4) < 0.5 && mathX >= 0 && mathX <= 4) {
+                        updateP1(mathX);
+                    }
+                });
+            }
+            
+            updateP1(0);
+        })();
+
+        // ==================== 手拉手模型 ====================
+        (function() {
+            const canvas = document.getElementById('mainCanvas2');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            
+            let currentAngle = 0;
+            let bdLength = 1;
+            let currentStep = 1;
+            let isAnimating = false;
+            
+            const SCALE = 0.65;
+            const triangle = {
+                A: { x: 300, y: 200 },
+                B: { x: 300 + (100 - 300) * SCALE, y: 200 + (380 - 200) * SCALE },
+                C: { x: 300 + (500 - 300) * SCALE, y: 200 + (380 - 200) * SCALE }
+            };
+            
+            function getD() {
+                const dx = triangle.B.x + bdLength * (triangle.C.x - triangle.B.x) / 4;
+                const dy = triangle.B.y + bdLength * (triangle.C.y - triangle.B.y) / 4;
+                return { x: dx, y: dy };
+            }
+            
+            function getE(angle) {
+                const D = getD();
+                const A = triangle.A;
+                const vx = D.x - A.x;
+                const vy = D.y - A.y;
+                const rad = angle * Math.PI / 180;
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+                const ex = A.x + vx * cos - vy * sin;
+                const ey = A.y + vx * sin + vy * cos;
+                return { x: ex, y: ey };
+            }
+            
+            function getADLength() {
+                const D = getD();
+                const dx = D.x - triangle.A.x;
+                const dy = D.y - triangle.A.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            function rotatePoint(px, py, cx, cy, angle) {
+                const rad = angle * Math.PI / 180;
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+                const dx = px - cx;
+                const dy = py - cy;
+                return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+            }
+            
+            window.draw2 = function() {
+                if (!ctx || !canvas) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 背景网格
+                ctx.strokeStyle = '#f0f0f0';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 600; i += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, 500);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(600, i);
+                    ctx.stroke();
+                }
+                
+                const D = getD();
+                const E = getE(currentAngle);
+                
+                // 步骤1：绘制等边三角形ABC
+                if (currentStep >= 1) {
+                    ctx.strokeStyle = '#2c3e50';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(triangle.A.x, triangle.A.y);
+                    ctx.lineTo(triangle.B.x, triangle.B.y);
+                    ctx.lineTo(triangle.C.x, triangle.C.y);
+                    ctx.closePath();
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = 'rgba(52, 152, 219, 0.1)';
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 20px Microsoft YaHei';
+                    ctx.fillText('A', triangle.A.x - 15, triangle.A.y - 15);
+                    ctx.fillText('B', triangle.B.x - 20, triangle.B.y + 25);
+                    ctx.fillText('C', triangle.C.x + 10, triangle.C.y + 25);
+                    
+                    ctx.font = 'bold 16px Microsoft YaHei';
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillText('4', 345, 270);
+                }
+                
+                // 步骤2：标出D点
+                if (currentStep >= 2) {
+                    ctx.beginPath();
+                    ctx.arc(D.x, D.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#9b59b6';
+                    ctx.fill();
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 20px Microsoft YaHei';
+                    ctx.fillText('D', D.x - 20, D.y + 5);
+                    
+                    ctx.font = 'bold 16px Microsoft YaHei';
+                    ctx.fillStyle = '#9b59b6';
+                    ctx.fillText('BD=' + bdLength.toFixed(1), (triangle.B.x + D.x) / 2 - 20, triangle.B.y + 25);
+                    
+                    const dcLen = 4 - bdLength;
+                    ctx.fillText('DC=' + dcLen.toFixed(1), (D.x + triangle.C.x) / 2 - 20, triangle.B.y + 25);
+                }
+                
+                // 步骤3：高亮△ABD
+                if (currentStep >= 3) {
+                    if (currentAngle > 0) {
+                        ctx.fillStyle = 'rgba(52, 152, 219, 0.15)';
+                        ctx.beginPath();
+                        ctx.moveTo(triangle.A.x, triangle.A.y);
+                        ctx.lineTo(triangle.B.x, triangle.B.y);
+                        ctx.lineTo(D.x, D.y);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.strokeStyle = 'rgba(52, 152, 219, 0.3)';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                    
+                    const rotB = rotatePoint(triangle.B.x, triangle.B.y, triangle.A.x, triangle.A.y, currentAngle);
+                    const rotD = E;
+                    
+                    ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(triangle.A.x, triangle.A.y);
+                    ctx.lineTo(rotB.x, rotB.y);
+                    ctx.lineTo(rotD.x, rotD.y);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#3498db';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(rotB.x, rotB.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#3498db';
+                    ctx.fill();
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 20px Microsoft YaHei';
+                    ctx.fillText('B', rotB.x - 20, rotB.y + 25);
+                    
+                    ctx.beginPath();
+                    ctx.arc(rotD.x, rotD.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#3498db';
+                    ctx.fill();
+                }
+                
+                // 步骤4-6：旋转完成后的△ACE
+                if (currentStep >= 4 && currentAngle >= 60) {
+                    ctx.fillStyle = 'rgba(39, 174, 96, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(triangle.A.x, triangle.A.y);
+                    ctx.lineTo(triangle.C.x, triangle.C.y);
+                    ctx.lineTo(E.x, E.y);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#27ae60';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(E.x, E.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#27ae60';
+                    ctx.fill();
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 20px Microsoft YaHei';
+                    ctx.fillText('E', E.x + 10, E.y + 10);
+                    
+                    ctx.strokeStyle = '#e74c3c';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(D.x, D.y);
+                    ctx.lineTo(E.x, E.y);
+                    ctx.stroke();
+                    
+                    const midDE = { x: (D.x + E.x) / 2, y: (D.y + E.y) / 2 };
+                    ctx.font = 'bold 18px Microsoft YaHei';
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillText('DE', midDE.x + 10, midDE.y - 10);
+                }
+                
+                // 步骤5-6：标注△ADE是等边三角形
+                if (currentStep >= 5 && currentAngle >= 60) {
+                    ctx.strokeStyle = '#f39c12';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(D.x, D.y);
+                    ctx.lineTo(E.x, E.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    const AD = getADLength();
+                    const ADmid = { x: (triangle.A.x + D.x) / 2, y: (triangle.A.y + D.y) / 2 };
+                    const AEmid = { x: (triangle.A.x + E.x) / 2, y: (triangle.A.y + E.y) / 2 };
+                    
+                    ctx.font = 'bold 16px Microsoft YaHei';
+                    ctx.fillStyle = '#f39c12';
+                    ctx.fillText('AD=' + AD.toFixed(2), ADmid.x - 30, ADmid.y - 10);
+                    ctx.fillText('AE=' + AD.toFixed(2), AEmid.x + 10, AEmid.y);
+                }
+                
+                // 步骤6：完整标注
+                if (currentStep >= 6 && currentAngle >= 60) {
+                    ctx.font = 'bold 20px Microsoft YaHei';
+                    ctx.fillStyle = '#c0392b';
+                    ctx.fillText('△ADE是等边三角形', 220, 450);
+                    
+                    const DE = getADLength();
+                    ctx.font = 'bold 22px Microsoft YaHei';
+                    ctx.fillText('DE = √' + (DE * DE).toFixed(0) + ' ≈ ' + DE.toFixed(2), 240, 480);
+                    
+                    ctx.font = 'bold 14px Microsoft YaHei';
+                    ctx.fillStyle = '#3498db';
+                    ctx.fillText('AB', 235, 260);
+                    ctx.fillStyle = '#27ae60';
+                    ctx.fillText('AC', 370, 260);
+                    
+                    if (currentAngle > 0 && currentAngle < 60) {
+                        ctx.strokeStyle = '#e74c3c';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(triangle.A.x, triangle.A.y, 35, -Math.PI/2, -Math.PI/2 + currentAngle * Math.PI / 180);
+                        ctx.stroke();
+                        
+                        const arrowAngle = -Math.PI/2 + currentAngle * Math.PI / 180;
+                        const ax = triangle.A.x + 35 * Math.cos(arrowAngle);
+                        const ay = triangle.A.y + 35 * Math.sin(arrowAngle);
+                        ctx.beginPath();
+                        ctx.moveTo(ax - 8, ay - 5);
+                        ctx.lineTo(ax, ay);
+                        ctx.lineTo(ax - 8, ay + 5);
+                        ctx.stroke();
+                    }
+                }
+                
+                // 绘制旋转轨迹
+                if (currentStep >= 4) {
+                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.arc(triangle.A.x, triangle.A.y, 35, -Math.PI/2, -Math.PI/2 + Math.PI/3);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            };
+            
+            function playRotation() {
+                if (isAnimating) return;
+                const playBtn = document.getElementById('playBtn2');
+                if (playBtn) playBtn.disabled = true;
+                
+                isAnimating = true;
+                currentStep = 4;
+                updateStepIndicator();
+                
+                const angleSlider = document.getElementById('angleSlider2');
+                const targetAngle = 60;
+                const step = 1;
+                
+                animationIntervals['shoulashou'] = setInterval(function() {
+                    if (currentAngle < targetAngle) {
+                        currentAngle += step;
+                        if (angleSlider) angleSlider.value = currentAngle;
+                        updateAngle();
+                    } else {
+                        clearInterval(animationIntervals['shoulashou']);
+                        animationIntervals['shoulashou'] = null;
+                        isAnimating = false;
+                        if (playBtn) playBtn.disabled = false;
+                        currentStep = 6;
+                        updateStepIndicator();
+                        draw2();
+                    }
+                }, 50);
+            }
+            
+            function updateAngle() {
+                const angleSlider = document.getElementById('angleSlider2');
+                const angleValue = document.getElementById('angleValue2');
+                const showAngle = document.getElementById('showAngle2');
+                
+                if (angleSlider) currentAngle = parseInt(angleSlider.value);
+                if (angleValue) angleValue.innerHTML = currentAngle + '°';
+                if (showAngle) showAngle.innerHTML = currentAngle + '°';
+                
+                updateData();
+                draw2();
+            }
+            
+            function updateBD() {
+                const bdSlider = document.getElementById('bdSlider2');
+                const bdValue = document.getElementById('bdValue2');
+                
+                if (bdSlider) bdLength = parseFloat(bdSlider.value);
+                if (bdValue) bdValue.innerHTML = bdLength.toFixed(1);
+                
+                updateData();
+                draw2();
+            }
+            
+            function updateData() {
+                const showAD = document.getElementById('showAD2');
+                const showDE = document.getElementById('showDE2');
+                const showAngleDAE = document.getElementById('showAngleDAE2');
+                const formulaText = document.getElementById('formulaText2');
+                
+                const AD = getADLength();
+                
+                if (showAD) showAD.innerHTML = currentAngle >= 60 ? AD.toFixed(2) : '-';
+                if (showDE) showDE.innerHTML = currentAngle >= 60 ? AD.toFixed(2) : '-';
+                if (showAngleDAE) showAngleDAE.innerHTML = currentAngle >= 60 ? '60°' : '-';
+                if (formulaText) {
+                    if (currentStep >= 6 && currentAngle >= 60) {
+                        formulaText.innerHTML = 'DE = √' + (AD * AD).toFixed(0) + ' ≈ ' + AD.toFixed(2);
+                    } else if (currentStep >= 5) {
+                        formulaText.innerHTML = '△ADE是等边三角形';
+                    } else if (currentStep >= 4) {
+                        formulaText.innerHTML = '旋转完成：△ABD → △ACE';
+                    } else if (currentStep >= 3) {
+                        formulaText.innerHTML = '△ABD绕A逆时针旋转60°';
+                    } else if (currentStep >= 2) {
+                        formulaText.innerHTML = 'D在BC上，BD=' + bdLength.toFixed(1);
+                    } else {
+                        formulaText.innerHTML = '等边△ABC，边长=4';
+                    }
+                }
+            }
+            
+            function updateStepIndicator() {
+                for (let i = 1; i <= 6; i++) {
+                    const stepDot = document.getElementById('step' + i + '_2');
+                    if (stepDot) {
+                        if (i < currentStep) {
+                            stepDot.className = 'step-dot completed';
+                        } else if (i === currentStep) {
+                            stepDot.className = 'step-dot active';
+                        } else {
+                            stepDot.className = 'step-dot';
+                        }
+                    }
+                }
+            }
+            
+            function stepByStep() {
+                if (isAnimating) return;
+                
+                if (currentStep < 6) {
+                    currentStep++;
+                    
+                    if (currentStep === 4) {
+                        playRotation();
+                    }
+                    
+                    updateStepIndicator();
+                    updateData();
+                    draw2();
+                }
+            }
+            
+            function resetAll() {
+                if (animationIntervals['shoulashou']) {
+                    clearInterval(animationIntervals['shoulashou']);
+                    animationIntervals['shoulashou'] = null;
+                }
+                isAnimating = false;
+                currentAngle = 0;
+                currentStep = 1;
+                
+                const angleSlider = document.getElementById('angleSlider2');
+                if (angleSlider) angleSlider.value = 0;
+                
+                const playBtn = document.getElementById('playBtn2');
+                if (playBtn) playBtn.disabled = false;
+                
+                updateStepIndicator();
+                updateData();
+                draw2();
+            }
+            
+            // 事件绑定
+            const playBtn = document.getElementById('playBtn2');
+            const stepBtn = document.getElementById('stepBtn2');
+            const resetBtn = document.getElementById('resetBtn2');
+            const angleSlider = document.getElementById('angleSlider2');
+            const bdSlider = document.getElementById('bdSlider2');
+            
+            if (playBtn) playBtn.addEventListener('click', playRotation);
+            if (stepBtn) stepBtn.addEventListener('click', stepByStep);
+            if (resetBtn) resetBtn.addEventListener('click', resetAll);
+            if (angleSlider) angleSlider.addEventListener('input', updateAngle);
+            if (bdSlider) bdSlider.addEventListener('input', updateBD);
+            
+            updateData();
+            draw2();
+        })();
+
+        // ==================== 矩形折叠 ====================
+        (function() {
+            const canvas = document.getElementById('mainCanvas3');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            const graphCanvas = document.getElementById('graphCanvas3');
+            const graphCtx = graphCanvas ? graphCanvas.getContext('2d') : null;
+            
+            const MathModule = {
+                getBPrime(m) {
+                    const denom = m * m + 9;
+                    return { x: 6 * m * m / denom, y: 18 * m / denom };
+                },
+                getABPrimeSquared(m) {
+                    const bp = this.getBPrime(m);
+                    const dx = bp.x - 0;
+                    const dy = bp.y - 4;
+                    return dx * dx + dy * dy;
+                },
+                getABPrime(m) {
+                    return Math.sqrt(this.getABPrimeSquared(m));
+                },
+                getAngleMCBPrime(m) {
+                    const bp = this.getBPrime(m);
+                    const cm = { x: 0 - 3, y: m - 0 };
+                    const cb = { x: bp.x - 3, y: bp.y - 0 };
+                    const dot = cm.x * cb.x + cm.y * cb.y;
+                    const lenCM = Math.sqrt(cm.x * cm.x + cm.y * cm.y);
+                    const lenCB = Math.sqrt(cb.x * cb.x + cb.y * cb.y);
+                    const cosAngle = Math.max(-1, Math.min(1, dot / (lenCM * lenCB)));
+                    return Math.acos(cosAngle);
+                },
+                findMinMB() {
+                    let minAB = Infinity;
+                    let minM = 0;
+                    for (let m = 0; m <= 4; m += 0.001) {
+                        const ab = this.getABPrime(m);
+                        if (ab < minAB) {
+                            minAB = ab;
+                            minM = m;
+                        }
+                    }
+                    return { m: minM, ab: minAB };
+                }
+            };
+            
+            const minResult = MathModule.findMinMB();
+            
+            const ORIGIN_X = 200;
+            const ORIGIN_Y = 420;
+            const SCALE = 60;
+            
+            let currentBM = 2.0;
+            let isAnimating = false;
+            let trajectoryHistory = [];
+            let showTrajectory = true;
+            let trailGlowPhase = 0;
+            
+            function toCanvas(x, y) {
+                return { x: ORIGIN_X + x * SCALE, y: ORIGIN_Y - y * SCALE };
+            }
+            
+            window.draw3 = function() {
+                if (!ctx || !canvas) return;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawGrid();
+                drawHiddenCircle();
+                if (showTrajectory) drawBPrimeTrajectory();
+                drawRectangle();
+                drawFoldLine();
+                drawFoldedTriangle();
+                drawBPrime();
+                drawABPrime();
+                drawMPoint();
+                updateDisplay3();
+                drawGraph3();
+            };
+            
+            function drawGrid() {
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 6; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(ORIGIN_X + i * SCALE, ORIGIN_Y - 4 * SCALE);
+                    ctx.lineTo(ORIGIN_X + i * SCALE, ORIGIN_Y + 0.5 * SCALE);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(ORIGIN_X - 0.5 * SCALE, ORIGIN_Y - i * SCALE);
+                    ctx.lineTo(ORIGIN_X + 6 * SCALE, ORIGIN_Y - i * SCALE);
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(ORIGIN_X - 20, ORIGIN_Y);
+                ctx.lineTo(ORIGIN_X + 6 * SCALE, ORIGIN_Y);
+                ctx.moveTo(ORIGIN_X, ORIGIN_Y - 4 * SCALE - 20);
+                ctx.lineTo(ORIGIN_X, ORIGIN_Y + 20);
+                ctx.stroke();
+                ctx.fillStyle = '#666';
+                ctx.font = '14px Microsoft YaHei';
+                ctx.fillText('x', ORIGIN_X + 6 * SCALE - 10, ORIGIN_Y + 20);
+                ctx.fillText('y', ORIGIN_X - 20, ORIGIN_Y - 4 * SCALE + 10);
+            }
+            
+            function drawHiddenCircle() {
+                const C = { x: 3, y: 0 };
+                const canvasC = toCanvas(C.x, C.y);
+                const radius = 3 * SCALE;
+                
+                ctx.shadowColor = '#9b59b6';
+                ctx.shadowBlur = 20;
+                ctx.strokeStyle = '#8e44ad';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([12, 8]);
+                ctx.beginPath();
+                ctx.arc(canvasC.x, canvasC.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#a569bd';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.arc(canvasC.x, canvasC.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#8e44ad';
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillText('r=3', canvasC.x - 15, canvasC.y + 5);
+                
+                ctx.fillStyle = '#9b59b6';
+                ctx.beginPath();
+                ctx.arc(canvasC.x, canvasC.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                const Bp = MathModule.getBPrime(currentBM);
+                const canvasBp = toCanvas(Bp.x, Bp.y);
+                
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(canvasC.x, canvasC.y);
+                ctx.lineTo(canvasBp.x, canvasBp.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                const midCB = { x: (canvasC.x + canvasBp.x) / 2, y: (canvasC.y + canvasBp.y) / 2 };
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = 'bold 14px Microsoft YaHei';
+                const angle = Math.atan2(canvasBp.y - canvasC.y, canvasBp.x - canvasC.x);
+                const offsetX = -Math.sin(angle) * 15;
+                const offsetY = Math.cos(angle) * 15;
+                ctx.fillText("CB'=3", midCB.x + offsetX, midCB.y + offsetY);
+                
+                ctx.fillStyle = '#8e44ad';
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillText('隐圆', canvasC.x + radius/2 - 20, canvasC.y - radius/2 - 10);
+            }
+            
+            function drawBPrimeTrajectory() {
+                if (trajectoryHistory.length < 2) return;
+                const C = { x: 3, y: 0 };
+                const canvasC = toCanvas(C.x, C.y);
+                trailGlowPhase += 0.1;
+                
+                const tailLength = Math.min(trajectoryHistory.length, 40);
+                for (let i = 0; i < tailLength - 1; i++) {
+                    const idx = trajectoryHistory.length - 1 - i;
+                    if (idx < 0) break;
+                    const point = trajectoryHistory[idx];
+                    const canvasPoint = toCanvas(point.x, point.y);
+                    const alpha = 1 - (i / tailLength) * 0.9;
+                    const lineWidth = 6 - (i / tailLength) * 4;
+                    const hue = 30 - (i / tailLength) * 20;
+                    
+                    if (i > 0) {
+                        const prevIdx = idx + 1;
+                        const prevPoint = trajectoryHistory[prevIdx];
+                        const canvasPrev = toCanvas(prevPoint.x, prevPoint.y);
+                        ctx.strokeStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+                        ctx.lineWidth = Math.max(1, lineWidth);
+                        ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(canvasPrev.x, canvasPrev.y);
+                        ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                        ctx.stroke();
+                    }
+                    
+                    if (i < 5) {
+                        const glowSize = 15 - i * 2;
+                        const gradient = ctx.createRadialGradient(
+                            canvasPoint.x, canvasPoint.y, 0,
+                            canvasPoint.x, canvasPoint.y, glowSize
+                        );
+                        gradient.addColorStop(0, `hsla(${hue}, 100%, 60%, ${alpha * 0.6})`);
+                        gradient.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+                        ctx.fillStyle = gradient;
+                        ctx.beginPath();
+                        ctx.arc(canvasPoint.x, canvasPoint.y, glowSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                if (trajectoryHistory.length >= 2) {
+                    ctx.shadowColor = '#ff4500';
+                    ctx.shadowBlur = 15;
+                    ctx.strokeStyle = '#ff6b35';
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    
+                    const firstPoint = trajectoryHistory[0];
+                    const firstCanvas = toCanvas(firstPoint.x, firstPoint.y);
+                    ctx.moveTo(firstCanvas.x, firstCanvas.y);
+                    
+                    for (let i = 1; i < trajectoryHistory.length; i++) {
+                        const point = trajectoryHistory[i];
+                        const canvasPoint = toCanvas(point.x, point.y);
+                        ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                    }
+                    ctx.stroke();
+                    
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#ffaa00';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                
+                if (trajectoryHistory.length > 5) {
+                    const pulseAlpha = 0.5 + Math.sin(trailGlowPhase) * 0.3;
+                    ctx.fillStyle = `rgba(255, 100, 0, ${pulseAlpha})`;
+                    ctx.font = 'bold 12px Microsoft YaHei';
+                    ctx.fillText('✨ B\'沿圆弧运动', 50, 50);
+                }
+            }
+            
+            function recordTrajectory() {
+                const bp = MathModule.getBPrime(currentBM);
+                const lastPoint = trajectoryHistory[trajectoryHistory.length - 1];
+                if (!lastPoint || Math.abs(lastPoint.x - bp.x) > 0.01 || Math.abs(lastPoint.y - bp.y) > 0.01) {
+                    trajectoryHistory.push({ x: bp.x, y: bp.y });
+                }
+            }
+            
+            function drawRectangle() {
+                const B = { x: 0, y: 0 };
+                const A = { x: 0, y: 4 };
+                const C = { x: 3, y: 0 };
+                const D = { x: 3, y: 4 };
+                
+                const canvasB = toCanvas(B.x, B.y);
+                const canvasA = toCanvas(A.x, A.y);
+                const canvasC = toCanvas(C.x, C.y);
+                const canvasD = toCanvas(D.x, D.y);
+                
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(canvasB.x, canvasB.y);
+                ctx.lineTo(canvasC.x, canvasC.y);
+                ctx.lineTo(canvasD.x, canvasD.y);
+                ctx.lineTo(canvasA.x, canvasA.y);
+                ctx.closePath();
+                ctx.stroke();
+                
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.1)';
+                ctx.fill();
+                
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 20px Microsoft YaHei';
+                const labels = [
+                    { p: B, l: 'B' },
+                    { p: A, l: 'A' },
+                    { p: C, l: 'C' },
+                    { p: D, l: 'D' }
+                ];
+                labels.forEach(item => {
+                    const canvasP = toCanvas(item.p.x, item.p.y);
+                    ctx.fillText(item.l, canvasP.x - 15, canvasP.y - 10);
+                });
+                
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillText('3', (canvasB.x + canvasC.x) / 2, canvasB.y + 25);
+                ctx.fillText('4', canvasB.x - 25, (canvasB.y + canvasA.y) / 2);
+            }
+            
+            function drawFoldLine() {
+                const C = { x: 3, y: 0 };
+                const M = { x: 0, y: currentBM };
+                const canvasC = toCanvas(C.x, C.y);
+                const canvasM = toCanvas(M.x, M.y);
+                
+                const dx = canvasM.x - canvasC.x;
+                const dy = canvasM.y - canvasC.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const extend = 50;
+                
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 5]);
+                ctx.beginPath();
+                ctx.moveTo(canvasC.x - dx/len * extend, canvasC.y - dy/len * extend);
+                ctx.lineTo(canvasM.x + dx/len * 30, canvasM.y + dy/len * 30);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillText('折叠线 CM', (canvasC.x + canvasM.x) / 2 + 10, (canvasC.y + canvasM.y) / 2);
+            }
+            
+            function drawFoldedTriangle() {
+                const C = { x: 3, y: 0 };
+                const M = { x: 0, y: currentBM };
+                const B = { x: 0, y: 0 };
+                const Bp = MathModule.getBPrime(currentBM);
+                
+                const canvasC = toCanvas(C.x, C.y);
+                const canvasM = toCanvas(M.x, M.y);
+                const canvasB = toCanvas(B.x, B.y);
+                const canvasBp = toCanvas(Bp.x, Bp.y);
+                
+                ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(canvasC.x, canvasC.y);
+                ctx.lineTo(canvasM.x, canvasM.y);
+                ctx.lineTo(canvasBp.x, canvasBp.y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+            
+            function drawBPrime() {
+                const Bp = MathModule.getBPrime(currentBM);
+                const canvasBp = toCanvas(Bp.x, Bp.y);
+                
+                const gradient = ctx.createRadialGradient(
+                    canvasBp.x, canvasBp.y, 0,
+                    canvasBp.x, canvasBp.y, 25
+                );
+                gradient.addColorStop(0, 'rgba(231, 76, 60, 0.9)');
+                gradient.addColorStop(0.5, 'rgba(231, 76, 60, 0.4)');
+                gradient.addColorStop(1, 'rgba(231, 76, 60, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(canvasBp.x, canvasBp.y, 25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(canvasBp.x, canvasBp.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#c0392b';
+                ctx.font = 'bold 24px Microsoft YaHei';
+                ctx.fillText('B\'', canvasBp.x + 18, canvasBp.y - 12);
+            }
+            
+            function drawABPrime() {
+                const A = { x: 0, y: 4 };
+                const Bp = MathModule.getBPrime(currentBM);
+                const canvasA = toCanvas(A.x, A.y);
+                const canvasBp = toCanvas(Bp.x, Bp.y);
+                
+                ctx.strokeStyle = '#f39c12';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(canvasA.x, canvasA.y);
+                ctx.lineTo(canvasBp.x, canvasBp.y);
+                ctx.stroke();
+                
+                const ab = MathModule.getABPrime(currentBM);
+                const midX = (canvasA.x + canvasBp.x) / 2;
+                const midY = (canvasA.y + canvasBp.y) / 2;
+                
+                ctx.fillStyle = '#d68910';
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillText(`AB' = ${ab.toFixed(2)}`, midX + 10, midY);
+            }
+            
+            function drawMPoint() {
+                const M = { x: 0, y: currentBM };
+                const canvasM = toCanvas(M.x, M.y);
+                
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(canvasM.x, canvasM.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#2980b9';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#2980b9';
+                ctx.font = 'bold 20px Microsoft YaHei';
+                ctx.fillText('M', canvasM.x - 20, canvasM.y - 10);
+                
+                const B = { x: 0, y: 0 };
+                const canvasB = toCanvas(B.x, B.y);
+                ctx.fillStyle = '#3498db';
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillText(`BM = ${currentBM.toFixed(2)}`, canvasM.x - 40, (canvasM.y + canvasB.y) / 2);
+            }
+            
+            function updateDisplay3() {
+                const ab = MathModule.getABPrime(currentBM);
+                const angle = MathModule.getAngleMCBPrime(currentBM) * 180 / Math.PI;
+                
+                const bmValueEl = document.getElementById('bmValue3');
+                const abValueEl = document.getElementById('abValue3');
+                const angleValueEl = document.getElementById('angleValue3');
+                const sliderValueEl = document.getElementById('sliderValue3');
+                
+                if (bmValueEl) bmValueEl.textContent = currentBM.toFixed(2);
+                if (abValueEl) abValueEl.textContent = ab.toFixed(2);
+                if (angleValueEl) angleValueEl.textContent = angle.toFixed(1) + '°';
+                if (sliderValueEl) sliderValueEl.textContent = currentBM.toFixed(2);
+                
+                const minIndicator = document.getElementById('minIndicator3');
+                
+                if (Math.abs(ab - 2) < 0.05) {
+                    if (minIndicator) minIndicator.classList.add('show');
+                    if (abValueEl) abValueEl.classList.add('highlight');
+                } else {
+                    if (minIndicator) minIndicator.classList.remove('show');
+                    if (abValueEl) abValueEl.classList.remove('highlight');
+                }
+            }
+            
+            function drawGraph3() {
+                if (!graphCtx || !graphCanvas) return;
+                const gCtx = graphCtx;
+                const w = graphCanvas.width;
+                const h = graphCanvas.height;
+                const padding = { left: 40, right: 20, top: 20, bottom: 35 };
+                const graphW = w - padding.left - padding.right;
+                const graphH = h - padding.top - padding.bottom;
+                
+                gCtx.clearRect(0, 0, w, h);
+                
+                gCtx.fillStyle = 'rgba(0,0,0,0.2)';
+                gCtx.fillRect(padding.left, padding.top, graphW, graphH);
+                
+                gCtx.strokeStyle = '#666';
+                gCtx.lineWidth = 1;
+                gCtx.beginPath();
+                gCtx.moveTo(padding.left, h - padding.bottom);
+                gCtx.lineTo(w - padding.right, h - padding.bottom);
+                gCtx.stroke();
+                gCtx.beginPath();
+                gCtx.moveTo(padding.left, h - padding.bottom);
+                gCtx.lineTo(padding.left, padding.top);
+                gCtx.stroke();
+                
+                gCtx.fillStyle = '#aaa';
+                gCtx.font = '11px Microsoft YaHei';
+                gCtx.fillText("AB'", padding.left - 30, h / 2);
+                gCtx.fillText('5', padding.left - 20, padding.top + 10);
+                gCtx.fillText('2', padding.left - 20, h - padding.bottom - 5);
+                gCtx.fillText('BM', w / 2, h - 3);
+                
+                // 绘制AB'曲线
+                gCtx.strokeStyle = '#f39c12';
+                gCtx.lineWidth = 2;
+                gCtx.beginPath();
+                
+                for (let x = 0; x <= 4; x += 0.05) {
+                    const ab = MathModule.getABPrime(x);
+                    const px = padding.left + graphW * (x / 4);
+                    const py = padding.top + graphH * (1 - (ab - 2) / 3);
+                    if (x === 0) gCtx.moveTo(px, py);
+                    else gCtx.lineTo(px, py);
+                }
+                gCtx.stroke();
+                
+                // 最小值线
+                const minY = padding.top + graphH * (1 - (2 - 2) / 3);
+                gCtx.strokeStyle = '#76ff03';
+                gCtx.lineWidth = 2;
+                gCtx.setLineDash([5, 3]);
+                gCtx.beginPath();
+                gCtx.moveTo(padding.left, minY);
+                gCtx.lineTo(w - padding.right, minY);
+                gCtx.stroke();
+                gCtx.setLineDash([]);
+                
+                // 当前点
+                const ab = MathModule.getABPrime(currentBM);
+                const currX = padding.left + graphW * (currentBM / 4);
+                const currY = padding.top + graphH * (1 - (ab - 2) / 3);
+                gCtx.fillStyle = '#f39c12';
+                gCtx.beginPath();
+                gCtx.arc(currX, currY, 6, 0, Math.PI * 2);
+                gCtx.fill();
+            }
+            
+            function updateBM3(newBM) {
+                currentBM = Math.max(0, Math.min(4, newBM));
+                const sliderEl = document.getElementById('bmSlider3');
+                if (sliderEl) sliderEl.value = currentBM;
+                recordTrajectory();
+                draw3();
+            }
+            
+            // 事件绑定
+            const slider = document.getElementById('bmSlider3');
+            const playBtn = document.getElementById('playBtn3');
+            const resetBtn = document.getElementById('resetBtn3');
+            const clearTrailBtn = document.getElementById('clearTrailBtn3');
+            const trajectoryToggle = document.getElementById('trajectoryToggle3');
+            
+            if (slider) {
+                slider.addEventListener('input', function() {
+                    updateBM3(parseFloat(this.value));
+                });
+            }
+            
+            if (playBtn) {
+                playBtn.addEventListener('click', function() {
+                    if (isAnimating) {
+                        clearInterval(animationIntervals['juxing']);
+                        animationIntervals['juxing'] = null;
+                        isAnimating = false;
+                        this.textContent = '▶ 播放动画 (A→B)';
+                    } else {
+                        isAnimating = true;
+                        this.textContent = '⏸ 暂停';
+                        animationIntervals['juxing'] = setInterval(function() {
+                            currentBM += 0.03;
+                            if (currentBM >= 4) {
+                                currentBM = 4;
+                                clearInterval(animationIntervals['juxing']);
+                                animationIntervals['juxing'] = null;
+                                isAnimating = false;
+                                const btn = document.getElementById('playBtn3');
+                                if (btn) btn.textContent = '▶ 播放动画 (A→B)';
+                            }
+                            recordTrajectory();
+                            draw3();
+                        }, 20);
+                    }
+                });
+            }
+            
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    if (isAnimating) {
+                        clearInterval(animationIntervals['juxing']);
+                        animationIntervals['juxing'] = null;
+                        isAnimating = false;
+                        const btn = document.getElementById('playBtn3');
+                        if (btn) btn.textContent = '▶ 播放动画 (A→B)';
+                    }
+                    currentBM = minResult.m;
+                    trajectoryHistory = [];
+                    draw3();
+                });
+            }
+            
+            if (clearTrailBtn) {
+                clearTrailBtn.addEventListener('click', function() {
+                    trajectoryHistory = [];
+                    draw3();
+                });
+            }
+            
+            if (trajectoryToggle) {
+                trajectoryToggle.addEventListener('change', function() {
+                    showTrajectory = this.checked;
+                    draw3();
+                });
+            }
+            
+            draw3();
+        })();
+
+        // ==================== 瓜豆原理 ====================
+        (function() {
+            const canvas = document.getElementById('mainCanvas4');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            
+            let t = 0;
+            let isPlaying = false;
+            let mode = 'line';
+            let trailPoints = [];
+            
+            const CENTER_X = 320;
+            const CENTER_Y = 260;
+            const SCALE = 60;
+            
+            const A = {x: 0, y: 2};
+            const B = {x: 2, y: 2};
+            const C = {x: 2, y: 0};
+            const D = {x: 0, y: 0};
+            
+            function toCanvas(px, py) {
+                return { x: CENTER_X + px * SCALE, y: CENTER_Y - py * SCALE };
+            }
+            
+            function getE() {
+                if (mode === 'line') {
+                    return {x: t, y: 2};
+                } else {
+                    const angle = (t / 2) * 2 * Math.PI;
+                    return {x: 2 * Math.cos(angle), y: 2 * Math.sin(angle)};
+                }
+            }
+            
+            function getF() {
+                if (mode === 'line') {
+                    return {x: -2, y: t};
+                } else {
+                    const angle = (t / 2) * 2 * Math.PI;
+                    return {x: -3 * Math.sin(angle), y: 3 * Math.cos(angle)};
+                }
+            }
+            
+            function drawGrid() {
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 0.5;
+                for(let i = -6; i <= 6; i++) {
+                    const p1 = toCanvas(i, -6);
+                    const p2 = toCanvas(i, 6);
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                    const p3 = toCanvas(-6, i);
+                    const p4 = toCanvas(6, i);
+                    ctx.beginPath();
+                    ctx.moveTo(p3.x, p3.y);
+                    ctx.lineTo(p4.x, p4.y);
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = '#9e9e9e';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(toCanvas(-6, 0).x, toCanvas(-6, 0).y);
+                ctx.lineTo(toCanvas(6, 0).x, toCanvas(6, 0).y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(toCanvas(0, -6).x, toCanvas(0, -6).y);
+                ctx.lineTo(toCanvas(0, 6).x, toCanvas(0, 6).y);
+                ctx.stroke();
+            }
+            
+            function drawSquareABCD() {
+                const A_c = toCanvas(A.x, A.y);
+                const B_c = toCanvas(B.x, B.y);
+                const C_c = toCanvas(C.x, C.y);
+                const D_c = toCanvas(D.x, D.y);
+                
+                ctx.fillStyle = 'rgba(200, 200, 255, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(A_c.x, A_c.y);
+                ctx.lineTo(B_c.x, B_c.y);
+                ctx.lineTo(C_c.x, C_c.y);
+                ctx.lineTo(D_c.x, D_c.y);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = '#1a237e';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(Math.min(A_c.x, B_c.x), Math.min(D_c.y, C_c.y), 2 * SCALE, 2 * SCALE);
+                
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillStyle = '#1a237e';
+                const labels = [
+                    {p: A_c, label: 'A', offsetX: -15, offsetY: -10},
+                    {p: B_c, label: 'B', offsetX: 10, offsetY: -10},
+                    {p: C_c, label: 'C', offsetX: 10, offsetY: 10},
+                    {p: D_c, label: 'D', offsetX: -15, offsetY: 10}
+                ];
+                labels.forEach(item => {
+                    ctx.fillStyle = '#1a237e';
+                    ctx.beginPath();
+                    ctx.arc(item.p.x, item.p.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillText(item.label, item.p.x + item.offsetX, item.p.y + item.offsetY);
+                });
+                
+                ctx.font = '14px Microsoft YaHei';
+                ctx.fillStyle = '#5c6bc0';
+                ctx.fillText('2', (A_c.x + B_c.x) / 2, A_c.y - 12);
+                ctx.fillText('2', B_c.x + 12, (B_c.y + C_c.y) / 2);
+            }
+            
+            function drawETrajectory() {
+                const A_c = toCanvas(A.x, A.y);
+                const B_c = toCanvas(B.x, B.y);
+                ctx.strokeStyle = '#2196f3';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(A_c.x, A_c.y);
+                ctx.lineTo(B_c.x, B_c.y);
+                ctx.stroke();
+                ctx.font = '12px Microsoft YaHei';
+                ctx.fillStyle = '#2196f3';
+                ctx.fillText('E的轨迹', (A_c.x + B_c.x) / 2 + 20, (A_c.y + B_c.y) / 2);
+            }
+            
+            function drawFTrajectoryLine() {
+                const start = toCanvas(-2, 0);
+                const end = toCanvas(-2, 2);
+                ctx.shadowColor = '#f44336';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = '#f44336';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillStyle = '#f44336';
+                ctx.fillText('F的轨迹', start.x - 45, (start.y + end.y) / 2);
+                ctx.fillText('路径长=2', end.x - 40, end.y + 20);
+            }
+            
+            function drawFTrajectoryCircle() {
+                const center = toCanvas(0, 0);
+                const radius = 3 * SCALE;
+                ctx.shadowColor = '#f44336';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = '#f44336';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillStyle = '#f44336';
+                ctx.fillText('F的轨迹（圆 r=3）', center.x - 75, center.y - radius - 10);
+            }
+            
+            function drawSquareDEFG() {
+                const E = getE();
+                const F = getF();
+                const D_c = toCanvas(D.x, D.y);
+                const E_c = toCanvas(E.x, E.y);
+                const F_c = toCanvas(F.x, F.y);
+                
+                const Gx = E.x + (F.x - D.x);
+                const Gy = E.y + (F.y - D.y);
+                const G_c = toCanvas(Gx, Gy);
+                
+                ctx.strokeStyle = '#4caf50';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(D_c.x, D_c.y);
+                ctx.lineTo(E_c.x, E_c.y);
+                ctx.lineTo(G_c.x, G_c.y);
+                ctx.lineTo(F_c.x, F_c.y);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillStyle = '#4caf50';
+                ctx.beginPath();
+                ctx.arc(G_c.x, G_c.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillText('G', G_c.x + 8, G_c.y - 5);
+            }
+            
+            function drawLines() {
+                const E = getE();
+                const F = getF();
+                const D_c = toCanvas(D.x, D.y);
+                const E_c = toCanvas(E.x, E.y);
+                const F_c = toCanvas(F.x, F.y);
+                
+                ctx.strokeStyle = '#2196f3';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(D_c.x, D_c.y);
+                ctx.lineTo(E_c.x, E_c.y);
+                ctx.stroke();
+                
+                ctx.strokeStyle = '#4caf50';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(D_c.x, D_c.y);
+                ctx.lineTo(F_c.x, F_c.y);
+                ctx.stroke();
+                
+                ctx.strokeStyle = '#9e9e9e';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(E_c.x, E_c.y);
+                ctx.lineTo(F_c.x, F_c.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.font = '14px Microsoft YaHei';
+                ctx.fillStyle = '#2196f3';
+                ctx.fillText('DE', (D_c.x + E_c.x) / 2 - 20, (D_c.y + E_c.y) / 2);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillText('DF', (D_c.x + F_c.x) / 2, (D_c.y + F_c.y) / 2 + 15);
+            }
+            
+            function drawFTrail() {
+                if (trailPoints.length < 2) return;
+                ctx.shadowColor = '#f44336';
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = '#f44336';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                const p0 = toCanvas(trailPoints[0].x, trailPoints[0].y);
+                ctx.moveTo(p0.x, p0.y);
+                for (let i = 1; i < trailPoints.length; i++) {
+                    const p = toCanvas(trailPoints[i].x, trailPoints[i].y);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            
+            function drawPoints() {
+                const E = getE();
+                const F = getF();
+                const E_c = toCanvas(E.x, E.y);
+                const F_c = toCanvas(F.x, F.y);
+                
+                ctx.fillStyle = '#2196f3';
+                ctx.beginPath();
+                ctx.arc(E_c.x, E_c.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#0d47a1';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.shadowColor = '#f44336';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#f44336';
+                ctx.beginPath();
+                ctx.arc(F_c.x, F_c.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#b71c1c';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                ctx.font = 'bold 16px Microsoft YaHei';
+                ctx.fillStyle = '#0d47a1';
+                ctx.fillText('E', E_c.x + 15, E_c.y - 5);
+                ctx.fillStyle = '#b71c1c';
+                ctx.fillText('F', F_c.x + 15, F_c.y - 5);
+            }
+            
+            function drawAngle() {
+                const E = getE();
+                const F = getF();
+                const D_c = toCanvas(D.x, D.y);
+                const E_c = toCanvas(E.x, E.y);
+                const F_c = toCanvas(F.x, F.y);
+                
+                const radius = 25;
+                ctx.strokeStyle = '#ff9800';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(D_c.x, D_c.y, radius, 
+                       Math.atan2(E_c.y - D_c.y, E_c.x - D_c.x),
+                       Math.atan2(F_c.y - D_c.y, F_c.x - D_c.x), false);
+                ctx.stroke();
+                
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.fillStyle = '#ff9800';
+                const midAngle = (Math.atan2(E_c.y - D_c.y, E_c.x - D_c.x) + 
+                                 Math.atan2(F_c.y - D_c.y, F_c.x - D_c.x)) / 2;
+                const labelX = D_c.x + (radius + 15) * Math.cos(midAngle);
+                const labelY = D_c.y + (radius + 15) * Math.sin(midAngle);
+                ctx.fillText('90°', labelX - 10, labelY);
+            }
+            
+            window.draw4 = function() {
+                if (!ctx || !canvas) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fafafa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                drawGrid();
+                
+                if (mode === 'line') {
+                    drawSquareABCD();
+                    drawETrajectory();
+                    drawFTrajectoryLine();
+                    drawSquareDEFG();
+                    drawLines();
+                    drawFTrail();
+                    drawPoints();
+                    drawAngle();
+                } else {
+                    drawSquareABCD();
+                    
+                    const center = toCanvas(0, 0);
+                    ctx.strokeStyle = '#2196f3';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.arc(center.x, center.y, 2 * SCALE, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.font = '14px Microsoft YaHei';
+                    ctx.fillStyle = '#2196f3';
+                    ctx.fillText("E的轨迹（圆 r=2）", center.x + 2 * SCALE + 10, center.y);
+                    
+                    drawFTrajectoryCircle();
+                    
+                    const E = getE();
+                    const F = getF();
+                    const D_c = toCanvas(D.x, D.y);
+                    const E_c = toCanvas(E.x, E.y);
+                    const F_c = toCanvas(F.x, F.y);
+                    
+                    ctx.strokeStyle = '#2196f3';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(D_c.x, D_c.y);
+                    ctx.lineTo(E_c.x, E_c.y);
+                    ctx.stroke();
+                    
+                    ctx.strokeStyle = '#4caf50';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(D_c.x, D_c.y);
+                    ctx.lineTo(F_c.x, F_c.y);
+                    ctx.stroke();
+                    
+                    const Gx = E.x + (F.x - D.x);
+                    const Gy = E.y + (F.y - D.y);
+                    const G_c = toCanvas(Gx, Gy);
+                    
+                    ctx.strokeStyle = '#4caf50';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(E_c.x, E_c.y);
+                    ctx.lineTo(G_c.x, G_c.y);
+                    ctx.lineTo(F_c.x, F_c.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    ctx.fillStyle = '#4caf50';
+                    ctx.beginPath();
+                    ctx.arc(G_c.x, G_c.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillText('G', G_c.x + 8, G_c.y - 5);
+                    
+                    drawFTrail();
+                    
+                    ctx.fillStyle = '#2196f3';
+                    ctx.beginPath();
+                    ctx.arc(E_c.x, E_c.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#0d47a1';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    ctx.shadowColor = '#f44336';
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = '#f44336';
+                    ctx.beginPath();
+                    ctx.arc(F_c.x, F_c.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#b71c1c';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    
+                    ctx.font = 'bold 16px Microsoft YaHei';
+                    ctx.fillStyle = '#0d47a1';
+                    ctx.fillText('E', E_c.x + 15, E_c.y - 5);
+                    ctx.fillStyle = '#b71c1c';
+                    ctx.fillText('F', F_c.x + 15, F_c.y - 5);
+                    
+                    ctx.font = 'bold 14px Microsoft YaHei';
+                    ctx.fillStyle = '#ff9800';
+                    const midAngle = Math.atan2((E_c.y + F_c.y) / 2 - D_c.y, (E_c.x + F_c.x) / 2 - D_c.x);
+                    const labelX = D_c.x + 35 * Math.cos(midAngle);
+                    const labelY = D_c.y + 35 * Math.sin(midAngle);
+                    ctx.fillText('90°', labelX - 10, labelY);
+                }
+            };
+            
+            window.updateDisplay4 = function() {
+                const E = getE();
+                const F = getF();
+                const slider = document.getElementById('positionSlider4');
+                if (slider) slider.value = t;
+                
+                const sliderValueEl = document.getElementById('sliderValue4');
+                if (sliderValueEl) {
+                    if (mode === 'circle') {
+                        const angleDeg = Math.round((t / 2) * 360);
+                        sliderValueEl.textContent = 'θ = ' + angleDeg + '°';
+                    } else {
+                        sliderValueEl.textContent = 't = ' + t.toFixed(2);
+                    }
+                }
+                
+                const ecoordEl = document.getElementById('ecoord4');
+                if (ecoordEl) ecoordEl.textContent = '(' + E.x.toFixed(2) + ', ' + E.y.toFixed(2) + ')';
+                
+                const fcoordEl = document.getElementById('fcoord4');
+                if (fcoordEl) fcoordEl.textContent = '(' + F.x.toFixed(2) + ', ' + F.y.toFixed(2) + ')';
+                
+                const aeLenEl = document.getElementById('aeLen4');
+                if (aeLenEl) aeLenEl.textContent = mode === 'line' ? t.toFixed(2) : '-';
+                
+                const deLenEl = document.getElementById('deLen4');
+                if (deLenEl) {
+                    if (mode === 'line') deLenEl.textContent = Math.sqrt(t * t + 4).toFixed(2);
+                    else deLenEl.textContent = '2.00';
+                }
+                
+                const dfLenEl = document.getElementById('dfLen4');
+                if (dfLenEl) {
+                    if (mode === 'line') dfLenEl.textContent = Math.sqrt(t * t + 4).toFixed(2);
+                    else dfLenEl.textContent = '3.00';
+                }
+                
+                const pathLenEl = document.getElementById('pathLen4');
+                if (pathLenEl) {
+                    if (mode === 'line') pathLenEl.textContent = t.toFixed(2);
+                    else pathLenEl.textContent = (t / 2 * 2 * Math.PI * 3).toFixed(2);
+                }
+                
+                const answerEl = document.getElementById('answer4');
+                if (answerEl) {
+                    if (mode === 'line') answerEl.textContent = '路径长 = 2';
+                    else answerEl.textContent = '路径长 = 6π ≈ 18.85';
+                }
+            };
+            
+            function updateFromSlider() {
+                const slider = document.getElementById('positionSlider4');
+                if (slider) {
+                    t = parseFloat(slider.value);
+                    const F = getF();
+                    if (trailPoints.length === 0 || 
+                        Math.abs(trailPoints[trailPoints.length - 1].x - F.x) > 0.01 ||
+                        Math.abs(trailPoints[trailPoints.length - 1].y - F.y) > 0.01) {
+                        trailPoints.push({x: F.x, y: F.y});
+                    }
+                    draw4();
+                    updateDisplay4();
+                }
+            }
+            
+            function toggleAnimation() {
+                const playBtn = document.getElementById('playBtn4');
+                
+                if (isPlaying) {
+                    isPlaying = false;
+                    if (playBtn) playBtn.textContent = '▶ 播放动画';
+                    if (animationIntervals['guadou']) {
+                        clearInterval(animationIntervals['guadou']);
+                        animationIntervals['guadou'] = null;
+                    }
+                } else {
+                    isPlaying = true;
+                    if (playBtn) playBtn.textContent = '⏸ 暂停';
+                    animationIntervals['guadou'] = setInterval(() => {
+                        let step = (mode === 'circle') ? 0.008 : 0.02;
+                        t += step;
+                        if (t >= 2) {
+                            t = 2;
+                            isPlaying = false;
+                            if (playBtn) playBtn.textContent = '▶ 播放动画';
+                            if (animationIntervals['guadou']) {
+                                clearInterval(animationIntervals['guadou']);
+                                animationIntervals['guadou'] = null;
+                            }
+                        }
+                        
+                        const F = getF();
+                        if (trailPoints.length === 0 || 
+                            Math.abs(trailPoints[trailPoints.length - 1].x - F.x) > 0.01 ||
+                            Math.abs(trailPoints[trailPoints.length - 1].y - F.y) > 0.01) {
+                            trailPoints.push({x: F.x, y: F.y});
+                        }
+                        
+                        draw4();
+                        updateDisplay4();
+                    }, 30);
+                }
+            }
+            
+            function resetAnimation() {
+                isPlaying = false;
+                const playBtn = document.getElementById('playBtn4');
+                if (playBtn) playBtn.textContent = '▶ 播放动画';
+                if (animationIntervals['guadou']) {
+                    clearInterval(animationIntervals['guadou']);
+                    animationIntervals['guadou'] = null;
+                }
+                t = 0;
+                trailPoints = [];
+                const slider = document.getElementById('positionSlider4');
+                if (slider) slider.value = 0;
+                draw4();
+                updateDisplay4();
+            }
+            
+            window.toggleMode = function() {
+                const modeBtn = document.getElementById('modeBtn4');
+                const canvasTitle = document.getElementById('canvasTitle4');
+                
+                if (mode === 'line') {
+                    mode = 'circle';
+                    if (modeBtn) {
+                        modeBtn.textContent = '🔄 切换：种线得线';
+                        modeBtn.classList.add('active');
+                    }
+                    if (canvasTitle) canvasTitle.textContent = '瓜豆原理：种圆得圆';
+                    const sliderLabel = document.getElementById('sliderLabel4');
+                    if (sliderLabel) sliderLabel.textContent = 'E 在圆上的角度 θ';
+                    
+                    document.getElementById('principle1Text4').innerHTML = '<span class="highlight-text">定比</span>：DE:DF = 2:3（DF = 1.5×DE）';
+                    document.getElementById('principle2Text4').innerHTML = '<span class="highlight-text">定角</span>：∠EDF = 90°（正方形内角）';
+                    document.getElementById('principle3Text4').innerHTML = '<span class="highlight-text">种圆得圆</span>：E在圆上运动（r=2）';
+                    document.getElementById('principle4Text4').innerHTML = 'F也在<span class="highlight-text">圆</span>上运动（r=3）';
+                    document.getElementById('principle5Text4').innerHTML = 'F轨迹：圆心(0,0)，半径3，<span class="highlight-text">路径长=6π≈18.85</span>';
+                    document.getElementById('legendEText4').textContent = 'E 的轨迹（圆 r=2）';
+                    document.getElementById('legendFText4').textContent = 'F 的轨迹（圆 r=3）';
+                } else {
+                    mode = 'line';
+                    if (modeBtn) {
+                        modeBtn.textContent = '🔄 切换：种圆得圆';
+                        modeBtn.classList.remove('active');
+                    }
+                    if (canvasTitle) canvasTitle.textContent = '瓜豆原理：种线得线';
+                    const sliderLabel = document.getElementById('sliderLabel4');
+                    if (sliderLabel) sliderLabel.textContent = 'E 在 AB 上的位置';
+                    
+                    document.getElementById('principle1Text4').innerHTML = '<span class="highlight-text">定比</span>：DE = DF = √(t²+4)，始终相等';
+                    document.getElementById('principle2Text4').innerHTML = '<span class="highlight-text">定角</span>：∠EDF = 90°（正方形内角）';
+                    document.getElementById('principle3Text4').innerHTML = '<span class="highlight-text">种线得线</span>：E在线段AB上运动';
+                    document.getElementById('principle4Text4').innerHTML = 'F也在<span class="highlight-text">线段</span>上运动（x = -2）';
+                    document.getElementById('principle5Text4').innerHTML = 'F轨迹：从(-2,0)到(-2,2)，<span class="highlight-text">路径长=2</span>';
+                    document.getElementById('legendEText4').textContent = 'E 的轨迹（AB）';
+                    document.getElementById('legendFText4').textContent = 'F 的轨迹';
+                }
+                
+                resetAnimation();
+            };
+            
+            // 事件绑定
+            const playBtn = document.getElementById('playBtn4');
+            const resetBtn = document.getElementById('resetBtn4');
+            const modeBtn = document.getElementById('modeBtn4');
+            const slider = document.getElementById('positionSlider4');
+            
+            if (playBtn) playBtn.addEventListener('click', toggleAnimation);
+            if (resetBtn) resetBtn.addEventListener('click', resetAnimation);
+            if (modeBtn) modeBtn.addEventListener('click', toggleMode);
+            if (slider) slider.addEventListener('input', updateFromSlider);
+            
+            draw4();
+            updateDisplay4();
+        })();
+
+        // 初始化
+        window.onload = function() {
+            switchTab(1);
+        };
+    </script>
+</body>
+</html>

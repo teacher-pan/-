@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二元一次方程组图像演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 36px;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 20px;
+        }
+        
+        /* 大字方程显示区 */
+        .equations-display {
+            background: white;
+            border-radius: 16px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        .equation-box {
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 28px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .equation-box.blue {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #1565c0;
+            border: 3px solid #2196f3;
+        }
+        .equation-box.green {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+            border: 3px solid #4caf50;
+        }
+        .equation-label {
+            font-size: 20px;
+            margin-bottom: 5px;
+            opacity: 0.7;
+        }
+        
+        /* 主画布区 */
+        .main-area {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 20px;
+        }
+        .canvas-container {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+        
+        /* 交点高亮区 */
+        .solution-highlight {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .solution-title {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        .solution-value {
+            font-size: 42px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .solution-coord {
+            font-size: 18px;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        /* 控制面板 */
+        .controls {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .control-section {
+            margin-bottom: 25px;
+        }
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+        .control-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .line-indicator {
+            width: 30px;
+            height: 8px;
+            border-radius: 4px;
+        }
+        .line-indicator.blue { background: #2196f3; }
+        .line-indicator.green { background: #4caf50; }
+        .control-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .slider-row {
+            margin-bottom: 14px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            margin-bottom: 6px;
+            color: #555;
+        }
+        .slider-value {
+            font-weight: bold;
+            font-size: 18px;
+            min-width: 70px;
+            text-align: right;
+        }
+        .slider-value.blue { color: #2196f3; }
+        .slider-value.green { color: #4caf50; }
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        /* 预设按钮 */
+        .presets {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #ddd;
+        }
+        .presets-title {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .preset-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            background: #f5f5f5;
+            border-color: #667eea;
+        }
+        
+        /* 状态提示 */
+        .status-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 15px;
+            color: #856404;
+            text-align: center;
+        }
+        
+        /* 闪烁动画 */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .blink {
+            animation: blink 0.8s infinite;
+        }
+        
+        /* 提示信息 */
+        .hint {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        
+        /* 题目框样式 */
+        .question-box {
+            background: #fff8dc;
+            border: 2px solid #d4a017;
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #5d4e0e;
+            line-height: 1.6;
+        }
+        .question-box strong {
+            color: #8b6914;
+        }
+        
+        @media (max-width: 900px) {
+            .main-area {
+                grid-template-columns: 1fr;
+            }
+            h1 { font-size: 28px; }
+            .equation-box { font-size: 22px; padding: 12px 18px; }
+            .solution-value { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📐 二元一次方程组图像演示</h1>
+        <p class="subtitle">拖动滑块调整直线，观察交点变化</p>
+        
+        <div class="question-box">
+            <strong>📖 题目：</strong>二元一次方程组的解就是两条直线的交点坐标。拖动滑块改变方程参数，观察交点位置变化。当两直线平行时无解，重合时有无穷多解。
+        </div>
+        
+        <!-- 大字方程显示 -->
+        <div class="equations-display">
+            <div class="equation-box blue">
+                <div class="equation-label">直线 ①</div>
+                <div id="eq1Display">y = 1.0x + (-2.0)</div>
+            </div>
+            <div style="font-size: 36px; color: #666;">→ ←</div>
+            <div class="equation-box green">
+                <div class="equation-label">直线 ②</div>
+                <div id="eq2Display">y = -1.0x + 4.0</div>
+            </div>
+        </div>
+        
+        <div class="main-area">
+            <!-- 画布 -->
+            <div class="canvas-container">
+                <canvas id="canvas" width="700" height="500"></canvas>
+            </div>
+            
+            <!-- 控制面板 -->
+            <div class="controls">
+                <div class="control-section">
+                    <div class="control-header">
+                        <div class="line-indicator blue"></div>
+                        <div class="control-title">直线 ①</div>
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-label">
+                            <span>斜率 k₁</span>
+                            <span class="slider-value blue" id="k1Value">1.00</span>
+                        </div>
+                        <input type="range" id="k1" min="-5" max="5" step="0.1" value="1" oninput="update()">
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-label">
+                            <span>截距 b₁</span>
+                            <span class="slider-value blue" id="b1Value">-2.00</span>
+                        </div>
+                        <input type="range" id="b1" min="-10" max="10" step="0.5" value="-2" oninput="update()">
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header">
+                        <div class="line-indicator green"></div>
+                        <div class="control-title">直线 ②</div>
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-label">
+                            <span>斜率 k₂</span>
+                            <span class="slider-value green" id="k2Value">-1.00</span>
+                        </div>
+                        <input type="range" id="k2" min="-5" max="5" step="0.1" value="-1" oninput="update()">
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-label">
+                            <span>截距 b₂</span>
+                            <span class="slider-value green" id="b2Value">4.00</span>
+                        </div>
+                        <input type="range" id="b2" min="-10" max="10" step="0.5" value="4" oninput="update()">
+                    </div>
+                </div>
+                
+                <div class="presets">
+                    <div class="presets-title">📚 预设方程组</div>
+                    <button class="preset-btn" onclick="setPreset(1, -2, -1, 4)">① k₁=1, b₁=-2 | k₂=-1, b₂=4</button>
+                    <button class="preset-btn" onclick="setPreset(2, -1, -2, 5)">② k₁=2, b₁=-1 | k₂=-2, b₂=5</button>
+                    <button class="preset-btn" onclick="setPreset(1, 1, 1, 3)">③ 平行线 y=x+1, y=x+3</button>
+                    <button class="preset-btn" onclick="setPreset(1, 2, 1, 2)">④ 重合线 y=x+2, y=x+2</button>
+                    <button class="preset-btn" onclick="setPreset(0, 2, 1, 0)">⑤ 水平线 y=2 与 y=x</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 解的显示区 -->
+        <div class="solution-highlight" id="solutionBox">
+            <div class="solution-title">🎯 方程组的解 = 交点坐标</div>
+            <div class="solution-value" id="solutionValue">x = 3.00, y = 1.00</div>
+            <div class="solution-coord" id="solutionCoord">(3.00 , 1.00)</div>
+        </div>
+        
+        <p class="hint">💡 提示：调整两条直线的斜率和截距，观察交点如何变化</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = 350;
+        const centerY = 250;
+        const scale = 30;
+        let animationId = null;
+        let blinkState = true;
+        
+        // 绘制坐标系
+        function drawGrid() {
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // 白色背景
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, w, h);
+            
+            // 淡灰色网格
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            for (let x = Math.ceil(-centerX / scale); x <= Math.ceil((w - centerX) / scale); x++) {
+                ctx.beginPath();
+                ctx.moveTo(centerX + x * scale, 0);
+                ctx.lineTo(centerX + x * scale, h);
+                ctx.stroke();
+            }
+            for (let y = Math.ceil(-centerY / scale); y <= Math.ceil((h - centerY) / scale); y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, centerY + y * scale);
+                ctx.lineTo(w, centerY + y * scale);
+                ctx.stroke();
+            }
+            
+            // 坐标轴 - 稍深颜色
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 2;
+            
+            // x轴（带箭头）
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(w - 10, centerY);
+            ctx.lineTo(w - 20, centerY - 6);
+            ctx.moveTo(w - 10, centerY);
+            ctx.lineTo(w - 20, centerY + 6);
+            ctx.stroke();
+            
+            // y轴（带箭头）
+            ctx.beginPath();
+            ctx.moveTo(centerX, h);
+            ctx.lineTo(centerX, 10);
+            ctx.lineTo(centerX - 6, 20);
+            ctx.moveTo(centerX, 10);
+            ctx.lineTo(centerX + 6, 20);
+            ctx.stroke();
+            
+            // 轴标签
+            ctx.fillStyle = '#666';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('x', w - 20, centerY - 15);
+            ctx.fillText('y', centerX + 12, 22);
+            ctx.fillText('O', centerX - 15, centerY + 18);
+            
+            // 刻度数字
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#888';
+            for (let x = -10; x <= 10; x++) {
+                if (x !== 0) {
+                    ctx.fillText(x.toString(), centerX + x * scale - 4, centerY + 18);
+                }
+            }
+            for (let y = -8; y <= 8; y++) {
+                if (y !== 0) {
+                    const textY = centerY - y * scale + 5;
+                    ctx.fillText(y.toString(), centerX + 8, textY);
+                }
+            }
+        }
+        
+        // 绘制直线
+        function drawLine(k, b, color, label, lineWidth) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            
+            if (Math.abs(k) < 0.01) {
+                // 水平线
+                const y = centerY - b * scale;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            } else {
+                // 计算直线与画布边界的交点
+                const x1 = -20, x2 = 20;
+                const y1 = k * x1 + b;
+                const y2 = k * x2 + b;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX + x1 * scale, centerY - y1 * scale);
+                ctx.lineTo(centerX + x2 * scale, centerY - y2 * scale);
+                ctx.stroke();
+            }
+            
+            // 直线标签（在线上显示方程）
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = color;
+            const labelX = k >= 0 ? 20 : canvas.width - 120;
+            ctx.fillText(label, labelX, 35);
+        }
+        
+        // 绘制交点（大红点+高亮）
+        function drawIntersection(x, y) {
+            const cx = centerX + x * scale;
+            const cy = centerY - y * scale;
+            
+            // 外圈高亮（闪烁）
+            if (blinkState) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(231, 76, 60, 0.2)';
+                ctx.fill();
+            }
+            
+            // 中圈
+            ctx.beginPath();
+            ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.3)';
+            ctx.fill();
+            
+            // 红色实心圆点
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+            ctx.strokeStyle = '#c0392b';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 内部白点
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            
+            // 坐标标签（上方）
+            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = '#e74c3c';
+            ctx.textAlign = 'center';
+            const labelText = `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+            ctx.fillText(labelText, cx, cy - 30);
+            ctx.textAlign = 'left';
+        }
+        
+        // 闪烁动画
+        function startBlink() {
+            // 先停止之前的闪烁
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            let lastTime = 0;
+            const interval = 600; // 600ms切换一次
+            
+            function animate(time) {
+                if (time - lastTime >= interval) {
+                    blinkState = !blinkState;
+                    lastTime = time;
+                    update(); // 重绘交点
+                }
+                animationId = requestAnimationFrame(animate);
+            }
+            animate(0);
+        }
+        
+        // 主更新函数
+        function update() {
+            const k1 = parseFloat(document.getElementById('k1').value);
+            const b1 = parseFloat(document.getElementById('b1').value);
+            const k2 = parseFloat(document.getElementById('k2').value);
+            const b2 = parseFloat(document.getElementById('b2').value);
+            
+            // 更新滑块显示
+            document.getElementById('k1Value').textContent = k1.toFixed(2);
+            document.getElementById('b1Value').textContent = b1.toFixed(2);
+            document.getElementById('k2Value').textContent = k2.toFixed(2);
+            document.getElementById('b2Value').textContent = b2.toFixed(2);
+            
+            // 更新方程显示
+            const eq1 = formatEquation('y', k1, b1);
+            const eq2 = formatEquation('y', k2, b2);
+            document.getElementById('eq1Display').textContent = eq1;
+            document.getElementById('eq2Display').textContent = eq2;
+            
+            // 绘制
+            drawGrid();
+            drawLine(k1, b1, '#2196f3', '① ' + eq1, 4);
+            drawLine(k2, b2, '#4caf50', '② ' + eq2, 4);
+            
+            // 计算交点
+            const solutionBox = document.getElementById('solutionBox');
+            const solutionValue = document.getElementById('solutionValue');
+            const solutionCoord = document.getElementById('solutionCoord');
+            
+            if (Math.abs(k1 - k2) < 0.001) {
+                if (Math.abs(b1 - b2) < 0.001) {
+                    // 重合
+                    solutionBox.classList.remove('blink');
+                    solutionBox.style.background = 'linear-gradient(135deg, #f39c12, #e67e22)';
+                    solutionValue.textContent = '∞ 无穷多组解';
+                    solutionCoord.textContent = '两条直线完全重合';
+                    solutionBox.querySelector('.solution-title').textContent = '⚠️ 两条直线重合';
+                } else {
+                    // 平行
+                    solutionBox.classList.remove('blink');
+                    solutionBox.style.background = 'linear-gradient(135deg, #95a5a6, #7f8c8d)';
+                    solutionValue.textContent = '∅ 无解';
+                    solutionCoord.textContent = '两条直线平行，没有交点';
+                    solutionBox.querySelector('.solution-title').textContent = '⚠️ 两条直线平行';
+                }
+            } else {
+                // 有唯一解
+                solutionBox.classList.add('blink');
+                solutionBox.style.background = 'linear-gradient(135deg, #ff6b6b, #ee5a24)';
+                solutionBox.querySelector('.solution-title').textContent = '🎯 方程组的解 = 交点坐标';
+                
+                const x = (b2 - b1) / (k1 - k2);
+                const y = k1 * x + b1;
+                
+                solutionValue.textContent = `x = ${x.toFixed(2)},  y = ${y.toFixed(2)}`;
+                solutionCoord.textContent = `(${x.toFixed(2)} , ${y.toFixed(2)})`;
+                
+                // 绘制交点
+                drawIntersection(x, y);
+            }
+        }
+        
+        // 格式化方程显示
+        function formatEquation(y, k, b) {
+            let result = y + ' = ';
+            if (Math.abs(k) < 0.001) {
+                result += b.toFixed(1);
+            } else {
+                if (Math.abs(k - 1) < 0.001) result += 'x';
+                else if (Math.abs(k + 1) < 0.001) result += '-x';
+                else result += k.toFixed(1) + 'x';
+                
+                if (Math.abs(b) < 0.001) {
+                    // 不显示
+                } else if (b > 0) {
+                    result += ' + ' + b.toFixed(1);
+                } else {
+                    result += ' - ' + Math.abs(b).toFixed(1);
+                }
+            }
+            return result;
+        }
+        
+        // 预设方程组
+        function setPreset(presetK1, presetB1, presetK2, presetB2) {
+            document.getElementById('k1').value = presetK1;
+            document.getElementById('b1').value = presetB1;
+            document.getElementById('k2').value = presetK2;
+            document.getElementById('b2').value = presetB2;
+            update();
+        }
+        
+        // 初始化
+        update();
+        startBlink();
+    </script>
+</body>
+</html>
